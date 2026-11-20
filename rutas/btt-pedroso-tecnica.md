@@ -1,5 +1,5 @@
 ---
-nombre: Día de técnica
+nombre: Técnica El Pedroso - Cazalla
 zona: Sierra Norte de Sevilla
 provincia: Sevilla
 bici: mtb
