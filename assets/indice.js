@@ -1,102 +1,64 @@
-// El Garaje - buscador, filtros y orden del listado.
-// Las filas ya vienen en el HTML: aqui solo se muestran, se ocultan y se
-// reordenan, asi que la pagina tambien funciona sin JavaScript.
+// El Garaje - buscar y filtrar las rutas.
+// Los paneles ya vienen en el HTML: aqui solo se muestran y se ocultan, asi
+// que la pagina tambien funciona sin JavaScript.
 (function () {
-  var rejilla = document.getElementById("rejilla");
-  if (!rejilla) return;
+  var listado = document.getElementById("listado-rutas");
+  if (!listado) return;
 
-  var filas = Array.prototype.slice.call(rejilla.querySelectorAll(".ruta-fila"));
+  var paneles = Array.prototype.slice.call(listado.querySelectorAll(".ruta-panel"));
   var buscar = document.getElementById("f-buscar");
-  var zona = document.getElementById("f-zona");
-  var dist = document.getElementById("f-dist");
-  var dplus = document.getElementById("f-dplus");
-  var dif = document.getElementById("f-dif");
   var contador = document.getElementById("contador");
   var vacio = document.getElementById("vacio");
   var limpiar = document.getElementById("limpiar");
-  var chipsBici = Array.prototype.slice.call(document.querySelectorAll(".chip[data-bici]"));
-  var chipsOrden = Array.prototype.slice.call(document.querySelectorAll(".chip[data-orden]"));
+  var chips = Array.prototype.slice.call(document.querySelectorAll(".chip"));
   var bici = "";
-  var orden = "reciente";
+  var zona = "";
 
   function normalizar(s) {
     return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   }
-  function num(t, attr) {
-    return parseFloat(t.dataset[attr]) || 0;
-  }
-
-  var comparadores = {
-    reciente: function (a, b) { return num(a, "orden") - num(b, "orden"); },
-    "dist-desc": function (a, b) { return num(b, "dist") - num(a, "dist"); },
-    "dplus-desc": function (a, b) { return num(b, "dplus") - num(a, "dplus"); },
-  };
 
   function aplicar() {
     var texto = normalizar(buscar && buscar.value);
-    var zonaSel = zona ? zona.value : "";
-    var maxDist = dist && dist.value ? parseFloat(dist.value) * 1000 : Infinity;
-    var maxD = dplus && dplus.value ? parseFloat(dplus.value) : Infinity;
-    var maxDif = dif && dif.value ? parseFloat(dif.value) : Infinity;
     var visibles = 0;
 
-    filas.forEach(function (t) {
+    paneles.forEach(function (p) {
       var ok = true;
-      if (texto && normalizar(t.dataset.busqueda).indexOf(texto) === -1) ok = false;
-      if (ok && zonaSel && t.dataset.zona !== zonaSel) ok = false;
-      if (ok && bici && t.dataset.bici !== bici) ok = false;
-      if (ok && num(t, "dist") > maxDist) ok = false;
-      if (ok && num(t, "dplus") > maxD) ok = false;
-      if (ok && maxDif !== Infinity) {
-        var d = num(t, "dif");
-        if (d === 0 || d > maxDif) ok = false;
-      }
-      t.hidden = !ok;
+      if (texto && normalizar(p.dataset.busqueda).indexOf(texto) === -1) ok = false;
+      if (ok && bici && p.dataset.bici !== bici) ok = false;
+      if (ok && zona && p.dataset.zona !== zona) ok = false;
+      p.hidden = !ok;
       if (ok) visibles++;
-    });
-
-    var cmp = comparadores[orden] || comparadores.reciente;
-    filas.slice().sort(cmp).forEach(function (t) { rejilla.appendChild(t); });
-
-    // la numeracion sigue a lo que se ve
-    var n = 0;
-    filas.forEach(function (t) {
-      if (t.hidden) return;
-      n++;
-      var marca = t.querySelector(".ruta-num");
-      if (marca) marca.textContent = n < 10 ? "0" + n : String(n);
     });
 
     if (contador) {
       contador.textContent =
-        visibles === filas.length
-          ? filas.length + (filas.length === 1 ? " ruta" : " rutas")
-          : visibles + " de " + filas.length + " rutas";
+        visibles === paneles.length
+          ? paneles.length === 1 ? "1 ruta" : paneles.length + " rutas"
+          : visibles + " de " + paneles.length + " rutas";
     }
     if (vacio) vacio.hidden = visibles !== 0;
-
-    // los deslizables vuelven a su primera vista: si no, las pestañas se
-    // quedan marcando una diapositiva que ya no es la que se ve
-    document.dispatchEvent(new CustomEvent("garaje:filtrado"));
   }
 
-  [buscar, zona, dist, dplus, dif].forEach(function (el) {
-    if (!el) return;
-    el.addEventListener("input", aplicar);
-    el.addEventListener("change", aplicar);
-  });
+  if (buscar) {
+    buscar.addEventListener("input", aplicar);
+    buscar.addEventListener("search", aplicar);
+  }
 
-  chipsBici.forEach(function (c) {
+  chips.forEach(function (c) {
     c.addEventListener("click", function () {
-      bici = c.dataset.bici || "";
-      chipsBici.forEach(function (x) { x.classList.toggle("activo", x === c); });
-      aplicar();
-    });
-  });
-  chipsOrden.forEach(function (c) {
-    c.addEventListener("click", function () {
-      orden = c.dataset.orden;
-      chipsOrden.forEach(function (x) { x.classList.toggle("activo", x === c); });
+      if (c.dataset.zona !== undefined) {
+        // pulsar la zona activa la quita
+        zona = zona === c.dataset.zona ? "" : c.dataset.zona;
+        chips.forEach(function (x) {
+          if (x.dataset.zona !== undefined) x.classList.toggle("activo", x.dataset.zona === zona && zona !== "");
+        });
+      } else {
+        bici = c.dataset.bici || "";
+        chips.forEach(function (x) {
+          if (x.dataset.bici !== undefined) x.classList.toggle("activo", x === c);
+        });
+      }
       aplicar();
     });
   });
@@ -104,11 +66,9 @@
   if (limpiar) {
     limpiar.addEventListener("click", function () {
       if (buscar) buscar.value = "";
-      [zona, dist, dplus, dif].forEach(function (s) { if (s) s.value = ""; });
       bici = "";
-      orden = "reciente";
-      chipsBici.forEach(function (x, i) { x.classList.toggle("activo", i === 0); });
-      chipsOrden.forEach(function (x, i) { x.classList.toggle("activo", i === 0); });
+      zona = "";
+      chips.forEach(function (x, i) { x.classList.toggle("activo", i === 0); });
       aplicar();
     });
   }

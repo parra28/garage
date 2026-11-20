@@ -128,7 +128,7 @@
   var svg = document.getElementById("perfil");
   if (!svg) { montarMapa(); return; }
 
-  var caja = svg.closest(".hero-perfil");
+  var caja = svg.closest(".perfil-caja");
   var cruz = document.getElementById("perfil-cruz");
   var punto = document.getElementById("perfil-punto");
   var globo = document.getElementById("perfil-globo");

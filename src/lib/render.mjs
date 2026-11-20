@@ -1,46 +1,32 @@
 // El Garaje - plantillas HTML.
 //
-// Lenguaje visual: tinta sobre papel, filetes de un pixel, sin esquinas
-// redondeadas, sin sombras y sin degradados. Los datos van en monoespaciada,
-// como la pantalla de un ciclocomputador.
+// El fondo es un tablero perforado y el contenido cuelga de el en paneles de
+// tamanos desiguales. Dos colores con funcion: azul de plano para la bici,
+// laton para el gimnasio. Nunca decoran.
 //
-// Un solo elemento atrevido: el perfil de altimetria como silueta maciza en
-// bermellon, a sangre. Todo lo demas se mantiene callado.
+// Dos usos mandan sobre todo lo demas:
+//   - el gimnasio se mira en el movil, entre series: animacion grande,
+//     numeros grandes y la teoria plegada;
+//   - en una ruta lo primero es descargar el GPX y saber como es.
 
 import { esc, markdown } from "./content.mjs";
 import { TIPOS_PUNTO } from "./puntos.mjs";
 import { analizarVideo } from "./video.mjs";
-import {
-  TIPOS_BICI,
-  TIPOS_RECORRIDO,
-  DIFICULTADES,
-  km,
-  entero,
-  decimal,
-  duracion,
-  fechaLarga,
-} from "./formato.mjs";
+import { TIPOS_BICI, TIPOS_RECORRIDO, DIFICULTADES, km, entero, decimal, duracion, fechaLarga } from "./formato.mjs";
 
 const SITIO = "El Garaje";
-const LEMA = "Las rutas y el gimnasio en el mismo sitio.";
-const LEMA_RUTAS = "Rutas propias trazadas sobre el terreno. Cada una con su perfil, sus paradas y el GPX listo para descargar.";
-const LEMA_GIMNASIO = "Las rutinas de fuerza del bloque de invierno. Series, cargas, descansos y la animación de cada ejercicio.";
 const HOST = "https://parra28.github.io";
 
 const FUENTES = `<link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">`;
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;800&display=swap" rel="stylesheet">`;
 
 const LEAFLET = `<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>`;
 
-// ------------------------------------------------------------------ silueta
+// --------------------------------------------------------------- silueta
 
-/**
- * El perfil como silueta maciza. Es la pieza grafica del sitio.
- * Con `hero` ademas lleva las paradas atravesandola y la regla de kilometros,
- * y los nodos que el JavaScript usa para seguir el cursor.
- */
+/** El perfil de altimetria como silueta maciza. */
 function silueta(perfil, { puntos = [], hero = false } = {}) {
   const W = 1000;
   const H = 240;
@@ -50,16 +36,13 @@ function silueta(perfil, { puntos = [], hero = false } = {}) {
   const techo = Math.max(...eles);
   const suelo = Math.min(...eles);
   const rango = Math.max(40, techo - suelo);
-  const base = suelo - rango * 0.3;
+  const base = suelo - rango * 0.28;
   const alto = techo + rango * 0.12;
-
   const X = (d) => (d / dTotal) * W;
   const Y = (e) => H - ((e - base) / (alto - base)) * H;
 
   const d =
-    `M0,${H} ` +
-    perfil.map((p) => `L${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ") +
-    ` L${W},${H} Z`;
+    `M0,${H} ` + perfil.map((p) => `L${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(" ") + ` L${W},${H} Z`;
 
   if (!hero) {
     return `<svg class="silueta" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><path d="${d}"/></svg>`;
@@ -70,11 +53,11 @@ function silueta(perfil, { puntos = [], hero = false } = {}) {
   const marcas = [];
   for (let k = paso; k < kmTotal; k += paso) marcas.push(k);
 
-  const reglas = puntos
+  const cortes = puntos
     .map((pt) => {
       const x = X(Math.min(pt.metros, dTotal));
-      return `<line class="corte${pt.aviso ? " es-aviso" : ""}" x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${H}"><title>${esc(
-        `${pt.etiqueta} · km ${decimal(pt.km)}`
+      return `<line x1="${x.toFixed(1)}" y1="0" x2="${x.toFixed(1)}" y2="${H}"><title>${esc(
+        `${pt.etiqueta}, km ${decimal(pt.km)}`
       )}</title></line>`;
     })
     .join("");
@@ -82,27 +65,23 @@ function silueta(perfil, { puntos = [], hero = false } = {}) {
   const etiquetas = puntos
     .map((pt) => {
       const pos = Math.min(pt.metros, dTotal) / dTotal;
-      const alFinal = pos > 0.8;
-      return `<span class="corte-etiqueta${alFinal ? " al-final" : ""}" style="left:${(pos * 100).toFixed(3)}%">${esc(
-        pt.etiqueta
-      )} · km ${decimal(pt.km)}</span>`;
+      return `<span class="corte-etiqueta${pos > 0.8 ? " al-final" : ""}" style="left:${(pos * 100).toFixed(
+        3
+      )}%">${esc(pt.etiqueta)}, km ${decimal(pt.km)}</span>`;
     })
     .join("");
 
   const regla = marcas
-    .map(
-      (k) =>
-        `<span class="marca-km" style="left:${((k * 1000) / dTotal * 100).toFixed(3)}%"><i></i><b>${entero(k)}</b></span>`
-    )
+    .map((k) => `<span class="marca-km" style="left:${(((k * 1000) / dTotal) * 100).toFixed(3)}%"><i></i><b>${entero(k)}</b></span>`)
     .join("");
 
-  return `<div class="hero-perfil">
+  return `<div class="perfil-caja">
   <div class="hero-etiquetas">${etiquetas}</div>
   <svg id="perfil" class="silueta hero" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
-    role="img" aria-label="Perfil de altimetría: de ${entero(suelo)} a ${entero(techo)} metros a lo largo de ${decimal(kmTotal)} kilómetros"
+    role="img" aria-label="Perfil de altimetría, de ${entero(suelo)} a ${entero(techo)} metros a lo largo de ${decimal(kmTotal)} kilómetros"
     data-dtotal="${dTotal}" data-base="${base.toFixed(2)}" data-alto="${alto.toFixed(2)}" data-h="${H}" data-w="${W}">
     <path d="${d}"/>
-    <g class="cortes">${reglas}</g>
+    <g class="cortes">${cortes}</g>
     <line id="perfil-cruz" class="perfil-cruz" x1="0" y1="0" x2="0" y2="${H}" hidden/>
     <circle id="perfil-punto" class="perfil-punto" r="5" hidden/>
   </svg>
@@ -111,33 +90,13 @@ function silueta(perfil, { puntos = [], hero = false } = {}) {
 </div>`;
 }
 
-/** Trazado reducido para los minimapas del carrusel. */
-function trazadoMini(trazado, maximo = 160) {
-  if (!trazado || trazado.length === 0) return [];
-  const paso = Math.max(1, Math.ceil(trazado.length / maximo));
-  const out = [];
-  for (let i = 0; i < trazado.length; i += paso) {
-    out.push([Math.round(trazado[i][0] * 1e4) / 1e4, Math.round(trazado[i][1] * 1e4) / 1e4]);
-  }
-  const u = trazado[trazado.length - 1];
-  out.push([Math.round(u[0] * 1e4) / 1e4, Math.round(u[1] * 1e4) / 1e4]);
-  return out;
-}
-
-function datosMapas(rutas) {
-  const datos = {};
-  for (const r of rutas) datos[r.slug] = trazadoMini(r.trazado);
-  return `<script type="application/json" id="datos-mapas">${JSON.stringify(datos).replace(/</g, "\\u003c")}</script>`;
-}
-
-// ------------------------------------------------------------------- piezas
+// ---------------------------------------------------------------- piezas
 
 function dato(valor, unidad, etiqueta, { grande = false } = {}) {
   if (valor === null || valor === undefined || valor === "") return "";
-  return `<div class="dato${grande ? " grande" : ""}">
-  <span class="dato-valor mono">${valor}${unidad ? `<small>${esc(unidad)}</small>` : ""}</span>
-  <span class="dato-etiqueta">${esc(etiqueta)}</span>
-</div>`;
+  return `<div class="dato${grande ? " grande" : ""}"><b>${valor}${
+    unidad ? `<small>${esc(unidad)}</small>` : ""
+  }</b><span>${esc(etiqueta)}</span></div>`;
 }
 
 function tiempos(r) {
@@ -150,70 +109,61 @@ function tiempos(r) {
   return [{ etiqueta: "Tiempo estimado", valor: duracion(r.tiempoEstimado) }];
 }
 
-/** Distintivo del tipo de bici: lo primero que debe verse de una ruta. */
-function distintivo(r) {
+function tipoBici(r) {
   const b = TIPOS_BICI[r.bici];
   if (!b) return "";
-  return `<span class="tipo tipo-${esc(r.bici)}">${
-    b.icono ? `<svg class="tipo-icono" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">${b.icono}</svg>` : ""
+  return `<span class="tipo">${
+    b.icono ? `<svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">${b.icono}</svg>` : ""
   }${esc(b.etiqueta)}</span>`;
 }
 
-function meta(r) {
+/** Lugar y forma de la ruta, en lenguaje llano. */
+function lugarRuta(r) {
   const partes = [r.zona, TIPOS_RECORRIDO[r.tipoRecorrido]];
-  if (r.dificultad) partes.push(DIFICULTADES[r.dificultad]);
-  if (r.fotos && r.fotos.length) partes.push(`${r.fotos.length} ${r.fotos.length === 1 ? "foto" : "fotos"}`);
-  if (r.videos && r.videos.length) partes.push(r.videos.length === 1 ? "vídeo" : `${r.videos.length} vídeos`);
-  return partes.filter(Boolean).map((x) => `<span>${esc(x)}</span>`).join('<span class="sep">/</span>');
+  if (r.dificultad) partes.push(DIFICULTADES[r.dificultad].toLowerCase());
+  return esc(partes.filter(Boolean).join(", "));
 }
 
-// ------------------------------------------------------------------ esqueleto
+// ------------------------------------------------------------- esqueleto
 
 function layout({ base, titulo, descripcion, seccion = "", contenido, scripts = "", imagen = "", ver = "" }) {
   const v = ver ? `?v=${ver}` : "";
-  const tituloCompleto = titulo === SITIO ? `${SITIO} · ${LEMA}` : `${titulo} · ${SITIO}`;
+  const marca = (s) => (seccion === s ? ' aria-current="page"' : "");
   return `<!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(tituloCompleto)}</title>
+<title>${esc(titulo === SITIO ? SITIO : `${titulo} · ${SITIO}`)}</title>
 <meta name="description" content="${esc(descripcion)}">
 <meta property="og:title" content="${esc(titulo)}">
 <meta property="og:description" content="${esc(descripcion)}">
 <meta property="og:type" content="website">
 ${imagen ? `<meta property="og:image" content="${esc(imagen)}">\n<meta name="twitter:card" content="summary_large_image">` : ""}
-<meta name="theme-color" content="#f4f4f2" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0c0c0c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#dedfdc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111314" media="(prefers-color-scheme: dark)">
 ${FUENTES}
 <link rel="stylesheet" href="${base}assets/styles.css${v}">
 <link rel="icon" href="${base}assets/icono.svg" type="image/svg+xml">
-<script>
-try { var t = localStorage.getItem("garaje-tema"); if (t) document.documentElement.dataset.tema = t; } catch (e) {}
-</script>
+<script>try{var t=localStorage.getItem("garaje-tema");if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body>
 <a class="salto" href="#principal">Ir al contenido</a>
 <header class="barra">
   <div class="caja barra-fila">
-    <a class="marca" href="${base}">EL GARAJE</a>
-    <div class="barra-der">
-      <a class="seccion${seccion === "rutas" ? " activa" : ""}" href="${base}rutas/"${seccion === "rutas" ? ' aria-current="page"' : ""}>Rutas</a>
-      <a class="seccion${seccion === "gimnasio" ? " activa" : ""}" href="${base}gimnasio/"${seccion === "gimnasio" ? ' aria-current="page"' : ""}>Gimnasio</a>
+    <a class="marca" href="${base}">${SITIO}</a>
+    <nav class="navega">
+      <a href="${base}rutas/"${marca("rutas")}>Bici</a>
+      <a href="${base}gimnasio/"${marca("gimnasio")}>Gimnasio</a>
       <button type="button" id="boton-tema" class="boton-tema" aria-label="Cambiar entre tema claro y oscuro">
-        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg>
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor"/></svg>
       </button>
-    </div>
+    </nav>
   </div>
 </header>
-<main id="principal">
+<main id="principal"><div class="caja">
 ${contenido}
-</main>
-<footer class="pie">
-  <div class="caja">
-    <p>Rutas propias, trazadas y verificadas sobre el terreno, y las rutinas de gimnasio que las sostienen. Los archivos GPX se ofrecen tal cual: comprueba siempre el estado de los caminos y la normativa de la zona antes de salir. Las rutinas son una guía de entrenamiento, no una prescripción médica.</p>
-  </div>
-</footer>
+</div></main>
 <script src="${base}assets/tema.js${v}"></script>
 ${scripts}
 </body>
@@ -221,461 +171,334 @@ ${scripts}
 `;
 }
 
-// -------------------------------------------------------------------- filas
+// ------------------------------------------------------- paneles sueltos
 
-function fila(r, base, { numero = null } = {}) {
+function panelRuta(r, base) {
   const t = tiempos(r);
-  return `<article class="ruta-fila"
+  return `<a class="panel enlace ajustado ruta-panel c4" href="${base}ruta/${r.slug}/"
   data-busqueda="${esc([r.nombre, r.zona, r.provincia, (r.tags || []).join(" ")].filter(Boolean).join(" ").toLowerCase())}"
-  data-zona="${esc(r.zona || "")}"
-  data-bici="${esc(r.bici || "")}"
-  data-dist="${r.distancia}"
-  data-dplus="${r.desnivelPositivo}"
-  data-dif="${r.dificultad || 0}"
-  data-orden="${r.orden}">
-  <a class="ruta-enlace" href="${base}ruta/${r.slug}/">
-    <div class="ruta-cabeza">
-      <div class="ruta-ident">
-        ${numero !== null ? `<span class="ruta-num mono">${String(numero).padStart(2, "0")}</span>` : ""}
-        <div>
-          <div class="ruta-titulo-fila">
-            ${distintivo(r)}
-            <h2 class="nombre">${esc(r.nombre)}</h2>
-          </div>
-          <div class="ruta-meta">${meta(r)}</div>
-        </div>
-      </div>
-      <div class="ruta-datos">
-        ${dato(km(r.distancia), "km", "Distancia")}
-        ${dato(entero(r.desnivelPositivo), "m", "Desnivel +")}
-        ${dato(t[0].valor, "", t[0].etiqueta)}
-      </div>
+  data-zona="${esc(r.zona || "")}" data-bici="${esc(r.bici || "")}"
+  data-dist="${r.distancia}" data-dplus="${r.desnivelPositivo}" data-dif="${r.dificultad || 0}" data-orden="${r.orden}">
+  <div class="ruta-perfil">${silueta(r.perfil)}</div>
+  <div class="ruta-cuerpo">
+    <h3>${esc(r.nombre)}</h3>
+    <p class="ruta-lugar">${lugarRuta(r)}</p>
+    <div class="ruta-cifras">
+      ${dato(km(r.distancia), "km", "Distancia")}
+      ${dato(entero(r.desnivelPositivo), "m", "Desnivel")}
+      ${dato(t[0].valor, "", t[0].etiqueta)}
     </div>
-  </a>
-  ${carrusel(r, base)}
-</article>`;
-}
-
-/**
- * Deslizable de la fila: el perfil primero, que es lo que identifica la
- * ruta de un vistazo, luego el mapa y despues las fotos. Se mueve con el
- * dedo, con la rueda o pulsando las etiquetas.
- */
-function carrusel(r, base) {
-  const fotos = (r.fotos || []).slice(0, 4);
-  const diapos = [
-    `<div class="diapo"><div class="minimapa" data-slug="${esc(r.slug)}"></div></div>`,
-    `<div class="diapo"><a class="diapo-enlace" href="${base}ruta/${r.slug}/" aria-label="Ver ${esc(
-      r.nombre
-    )}">${silueta(r.perfil)}</a></div>`,
-    ...fotos.map(
-      (f, i) =>
-        `<div class="diapo"><img src="${base}fotos/${r.slug}/${encodeURIComponent(
-          f.archivo
-        )}" alt="${esc(f.pie)}" loading="lazy" decoding="async">${
-          f.pie ? `<span class="diapo-pie">${esc(f.pie)}</span>` : ""
-        }</div>`
-    ),
-  ];
-  const nombres = ["Mapa", "Desnivel", ...fotos.map((f, i) => `Foto ${i + 1}`)];
-
-  return `<div class="carrusel" data-slug="${esc(r.slug)}">
-  <div class="carrusel-pista">${diapos.join("")}</div>
-  <div class="carrusel-tabs" role="tablist" aria-label="Vistas de ${esc(r.nombre)}">
-    ${nombres
-      .map(
-        (n, i) =>
-          `<button type="button" class="carrusel-tab${i === 0 ? " activo" : ""}" data-indice="${i}" role="tab" aria-selected="${
-            i === 0
-          }">${esc(n)}</button>`
-      )
-      .join("")}
+    <div class="material">${tipoBici(r)}</div>
   </div>
-</div>`;
+</a>`;
 }
 
-// -------------------------------------------------------------------- indice
+function panelRutina(r, base) {
+  return `<a class="panel enlace rutina-panel c4" href="${base}gimnasio/${r.slug}/">
+  <h3>${esc(r.nombre)}</h3>
+  ${r.resumen ? `<p class="rutina-resumen">${esc(r.resumen)}</p>` : ""}
+  <div class="datos">
+    ${dato(entero(r.duracion), "min", "Duración")}
+    ${dato(entero(r.ejercicios), "", "Ejercicios")}
+    ${dato(entero(r.series), "", "Series")}
+  </div>
+  ${
+    r.intensidad || r.material.length
+      ? `<div class="material">${r.intensidad ? `<span>${esc(r.intensidad)}</span>` : ""}${r.material
+          .map((m) => `<span>${esc(m)}</span>`)
+          .join("")}</div>`
+      : ""
+  }
+</a>`;
+}
 
-export function paginaIndice({ base, rutas, zonas, ver = "" }) {
-  const v = ver ? `?v=${ver}` : "";
+// ---------------------------------------------------------------- portada
+
+export function paginaPortada({ base, rutas, rutinas, ver = "" }) {
   const totalKm = rutas.reduce((a, r) => a + r.distancia, 0);
   const totalD = rutas.reduce((a, r) => a + r.desnivelPositivo, 0);
-  const bicis = [...new Set(rutas.map((r) => r.bici).filter(Boolean))];
 
   const contenido = `
-<div class="caja">
-  <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <span>Rutas</span></nav>
-  <section class="portada">
-    <div class="portada-fila">
-      <h1 class="nombre titular-portada">Rutas</h1>
-      <div class="portada-datos">
-        ${dato(entero(rutas.length), "", "Rutas")}
-        ${dato(entero(totalKm / 1000), "km", "Recorridos")}
-        ${dato(entero(totalD), "m", "Desnivel")}
-      </div>
+<div class="rejilla">
+  <section class="panel c8">
+    <h1 class="portada-titulo">El Garaje</h1>
+    <p class="portada-frase">Las rutas y el gimnasio en el mismo sitio. ${entero(rutas.length)} rutas con su mapa,
+    su perfil y el GPX listo para descargar, y ${entero(rutinas.length)} rutinas de fuerza con la animación de cada ejercicio.</p>
+  </section>
+  <section class="panel c4">
+    <div class="datos">
+      ${dato(entero(totalKm / 1000), "km", "Recorridos")}
+      ${dato(entero(totalD), "m", "Desnivel acumulado")}
+      ${dato(entero(rutinas.reduce((a, r) => a + r.ejercicios, 0)), "", "Ejercicios")}
     </div>
-    <p class="lema">${LEMA_RUTAS}</p>
   </section>
 
-  <section class="controles" aria-label="Buscar y filtrar">
-    <div class="buscador">
-      <label for="f-buscar" class="dato-etiqueta">Buscar</label>
-      <input type="search" id="f-buscar" placeholder="nombre, zona, pueblo, puerto…" autocomplete="off">
-    </div>
-    <div class="filtros">
-      <div class="grupo">
-        <span class="grupo-nombre">Bici</span>
-        <button type="button" class="chip activo" data-bici="">Todas</button>
-        ${bicis
-          .map(
-            (b) =>
-              `<button type="button" class="chip" data-bici="${esc(b)}">${esc(
-                TIPOS_BICI[b] ? TIPOS_BICI[b].etiqueta : b
-              )}</button>`
-          )
-          .join("")}
-      </div>
-      ${
-        zonas.length > 1
-          ? `<div class="grupo">
-        <span class="grupo-nombre">Zona</span>
-        <select id="f-zona" aria-label="Zona">
-          <option value="">Todas</option>
-          ${zonas.map((z) => `<option value="${esc(z)}">${esc(z)}</option>`).join("")}
-        </select>
-      </div>`
-          : ""
-      }
-      <div class="grupo">
-        <span class="grupo-nombre">Distancia</span>
-        <select id="f-dist" aria-label="Distancia máxima">
-          <option value="">Toda</option>
-          <option value="30">Hasta 30 km</option>
-          <option value="60">Hasta 60 km</option>
-          <option value="100">Hasta 100 km</option>
-          <option value="150">Hasta 150 km</option>
-        </select>
-      </div>
-      <div class="grupo">
-        <span class="grupo-nombre">Desnivel</span>
-        <select id="f-dplus" aria-label="Desnivel máximo">
-          <option value="">Todo</option>
-          <option value="500">Hasta 500 m</option>
-          <option value="1000">Hasta 1.000 m</option>
-          <option value="2000">Hasta 2.000 m</option>
-          <option value="3000">Hasta 3.000 m</option>
-        </select>
-      </div>
-      <div class="grupo">
-        <span class="grupo-nombre">Dificultad</span>
-        <select id="f-dif" aria-label="Dificultad máxima">
-          <option value="">Toda</option>
-          <option value="1">Muy fácil</option>
-          <option value="2">Fácil</option>
-          <option value="3">Moderada</option>
-          <option value="4">Difícil</option>
-          <option value="5">Muy difícil</option>
-        </select>
-      </div>
-      <div class="grupo derecha">
-        <span class="grupo-nombre">Orden</span>
-        <button type="button" class="chip activo" data-orden="reciente">Recientes</button>
-        <button type="button" class="chip" data-orden="dist-desc">Distancia</button>
-        <button type="button" class="chip" data-orden="dplus-desc">Desnivel</button>
-      </div>
-    </div>
-    <p class="contador mono" id="contador" aria-live="polite"></p>
-  </section>
+  <div class="rotulo es-gimnasio">
+    <h2><span class="marca-seccion"></span>Gimnasio</h2>
+    <a href="${base}gimnasio/">Ver las rutinas</a>
+  </div>
+  ${rutinas.map((r) => panelRutina(r, base)).join("\n")}
 
-  <section id="rejilla">
-    ${rutas.map((r, i) => fila(r, base, { numero: i + 1 })).join("\n")}
-  </section>
-  <p class="vacio" id="vacio" hidden>Ninguna ruta coincide. <button type="button" id="limpiar">Quitar los filtros</button></p>
-</div>
-`;
+  <div class="rotulo es-bici">
+    <h2><span class="marca-seccion"></span>Bici</h2>
+    <a href="${base}rutas/">Buscar entre las rutas</a>
+  </div>
+  ${rutas.map((r) => panelRuta(r, base)).join("\n")}
+
+  <section class="panel c12"><p class="pie">Rutas propias, trazadas y verificadas sobre el terreno. Los archivos GPX
+  se ofrecen tal cual: comprueba siempre el estado de los caminos y la normativa de la zona antes de salir.</p></section>
+</div>`;
 
   return layout({
     base,
-    titulo: "Rutas",
-    seccion: "rutas",
-    descripcion: `${rutas.length} rutas en bici de carretera, gravel y BTT con mapa, perfil de altimetría y descarga del archivo GPX.`,
+    titulo: SITIO,
+    descripcion: `${rutas.length} rutas en bici con mapa, perfil y GPX, y ${rutinas.length} rutinas de fuerza para ciclista.`,
     contenido,
-    scripts: `${LEAFLET}
-${datosMapas(rutas)}
-<script src="${base}assets/indice.js${v}"></script>
-<script src="${base}assets/carrusel.js${v}"></script>`,
     ver,
   });
 }
 
-// --------------------------------------------------------------------- ficha
+// ----------------------------------------------------------- lista rutas
+
+export function paginaIndice({ base, rutas, zonas, ver = "" }) {
+  const bicis = [...new Set(rutas.map((r) => r.bici).filter(Boolean))];
+  const totalKm = rutas.reduce((a, r) => a + r.distancia, 0);
+  const totalD = rutas.reduce((a, r) => a + r.desnivelPositivo, 0);
+
+  const contenido = `
+<div class="rejilla">
+  <section class="panel c8">
+    <h1 class="titular">Bici</h1>
+    <p class="sub">Cada ruta lleva su mapa, el perfil de altimetría, las paradas y el GPX para descargar.</p>
+  </section>
+  <section class="panel c4">
+    <div class="datos">
+      ${dato(entero(rutas.length), "", "Rutas")}
+      ${dato(entero(totalKm / 1000), "km", "Recorridos")}
+      ${dato(entero(totalD), "m", "Desnivel")}
+    </div>
+  </section>
+
+  <section class="panel c12">
+    <div class="buscador">
+      <label for="f-buscar" class="sr">Buscar</label>
+      <input type="search" id="f-buscar" placeholder="Busca por nombre, zona o pueblo" autocomplete="off">
+    </div>
+    <div class="filtros">
+      <button type="button" class="chip activo" data-bici="">Todas</button>
+      ${bicis
+        .map((b) => `<button type="button" class="chip" data-bici="${esc(b)}">${esc(TIPOS_BICI[b] ? TIPOS_BICI[b].etiqueta : b)}</button>`)
+        .join("")}
+      ${zonas.length > 1 ? zonas.map((z) => `<button type="button" class="chip" data-zona="${esc(z)}">${esc(z)}</button>`).join("") : ""}
+    </div>
+    <p class="contador" id="contador" aria-live="polite"></p>
+  </section>
+
+  <div class="rejilla c12" id="listado-rutas" style="grid-column:span 12">
+    ${rutas.map((r) => panelRuta(r, base)).join("\n")}
+  </div>
+  <p class="panel c12 vacio" id="vacio" hidden>No hay ninguna ruta que coincida. <button type="button" id="limpiar">Quitar los filtros</button></p>
+</div>`;
+
+  return layout({
+    base,
+    titulo: "Bici",
+    seccion: "rutas",
+    descripcion: `${rutas.length} rutas en bici de carretera, gravel y MTB con mapa, perfil de altimetría y descarga del GPX.`,
+    contenido,
+    scripts: `<script src="${base}assets/indice.js${ver ? `?v=${ver}` : ""}"></script>`,
+    ver,
+  });
+}
+
+// ------------------------------------------------------------ ficha ruta
 
 export function paginaRuta({ base, r, otras, ver = "" }) {
   const v = ver ? `?v=${ver}` : "";
   const videos = (r.videos || []).map(analizarVideo).filter(Boolean);
-  const vídeosDesconocidos = (r.videos || []).length - videos.length;
   const t = tiempos(r);
 
   const practicos = [
-    r.parking ? ["Salida y aparcamiento", esc(r.parking)] : null,
+    r.parking ? ["Dónde se sale", esc(r.parking)] : null,
     r.epoca ? ["Mejor época", esc(r.epoca)] : null,
     r.agua ? ["Agua", esc(r.agua)] : null,
     r.superficie ? ["Superficie", esc(r.superficie)] : null,
     r.fecha ? ["Registrada el", esc(fechaLarga(r.fecha) || r.fecha)] : null,
   ].filter(Boolean);
 
-  const visor =
-    r.fotos && r.fotos.length
-      ? `<div class="visor" id="visor" hidden role="dialog" aria-modal="true" aria-label="Foto ampliada">
-  <button type="button" class="visor-cerrar" id="visor-cerrar" aria-label="Cerrar">×</button>
-  <button type="button" class="visor-nav visor-antes" id="visor-antes" aria-label="Foto anterior">‹</button>
-  <figure class="visor-figura"><img id="visor-img" src="" alt=""><figcaption id="visor-pie"></figcaption></figure>
-  <button type="button" class="visor-nav visor-despues" id="visor-despues" aria-label="Foto siguiente">›</button>
-</div>`
-      : "";
-
   const contenido = `
-<article class="ficha">
-  <div class="caja">
-    <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <a href="${base}rutas/">Rutas</a> <span class="sep">/</span> <span>${esc(r.nombre)}</span></nav>
-    <header class="ficha-cabeza">
-      <div>
-        ${distintivo(r)}
-        <h1 class="nombre titular">${esc(r.nombre)}</h1>
-        <div class="ruta-meta grande">${meta(r)}</div>
-      </div>
-      <div class="descarga">
-        <a class="boton principal" href="${base}gpx/${r.slug}.gpx" download>
-          <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Descargar GPX
-        </a>
-        <p class="peso mono">${esc(r.pesoGpx)} · ${entero(r.numPuntos)} puntos</p>
-      </div>
-    </header>
-    <div class="cifras">
+<div class="rejilla">
+  <section class="panel c8">
+    <h1 class="titular">${esc(r.nombre)}</h1>
+    <p class="sub">${lugarRuta(r)}</p>
+    <div class="material" style="margin-top:14px">${tipoBici(r)}</div>
+  </section>
+
+  <section class="panel oscuro c4 descarga">
+    <a class="descarga-boton" href="${base}gpx/${r.slug}.gpx" download>
+      Descargar GPX
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3v12m0 0-4.5-4.5M12 15l4.5-4.5M4 20h16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+    <p class="descarga-pie">${esc(r.pesoGpx)}, ${entero(r.numPuntos)} puntos. Listo para el GPS o para Komoot.</p>
+  </section>
+
+  <section class="panel c12">
+    <div class="datos">
       ${dato(km(r.distancia), "km", "Distancia", { grande: true })}
-      ${dato(entero(r.desnivelPositivo), "m", "Desnivel +", { grande: true })}
+      ${dato(entero(r.desnivelPositivo), "m", "Desnivel positivo", { grande: true })}
       ${t.map((x) => dato(x.valor, "", x.etiqueta, { grande: true })).join("")}
-      ${dato(esc(TIPOS_RECORRIDO[r.tipoRecorrido] || r.tipoRecorrido), "", "Recorrido", { grande: true })}
+      ${r.conAltitud ? dato(entero(r.altitudMaxima), "m", "Altitud máxima", { grande: true }) : ""}
     </div>
-  </div>
+  </section>
 
   ${
     r.conAltitud
-      ? `${silueta(r.perfil, { puntos: r.puntos || [], hero: true })}
-  <div class="caja"><p class="pie-grafico">Pasa el cursor por el perfil para ver ese punto en el mapa. Las líneas verticales son las paradas.</p></div>`
+      ? `<section class="panel ajustado c12">${silueta(r.perfil, { puntos: r.puntos || [], hero: true })}</section>`
       : ""
   }
 
-  <div class="caja">
-    <section class="bloque">
-      <h2>Mapa</h2>
-      <div id="mapa" class="mapa"></div>
-    </section>
+  <section class="panel ajustado c12"><div id="mapa" class="mapa"></div></section>
 
-    ${r.descripcionHtml ? `<section class="bloque prosa"><h2>La ruta</h2>${r.descripcionHtml}</section>` : ""}
+  ${
+    r.descripcionHtml
+      ? `<section class="panel c7"><div class="prosa">${r.descripcionHtml}</div></section>`
+      : ""
+  }
 
+  <section class="panel c5">
     ${
       r.puntos && r.puntos.length
-        ? `<section class="bloque">
-      <h2>Paradas</h2>
-      <ul class="paradas">
-        ${r.puntos
-          .map(
-            (pt) => `<li class="parada${pt.aviso ? " es-aviso" : ""}">
-          <span class="parada-km mono">km ${decimal(pt.km)}</span>
-          <span class="parada-icono" aria-hidden="true"><svg viewBox="0 0 24 24" width="16" height="16">${
-            (TIPOS_PUNTO[pt.tipo] || TIPOS_PUNTO.otro).icono
-          }</svg></span>
-          <span class="parada-texto"><b>${esc(pt.etiqueta)}</b>${pt.texto ? ` · ${esc(pt.texto)}` : ""}</span>
-        </li>`
-          )
-          .join("")}
-      </ul>
-    </section>`
+        ? `<h2 style="font-size:1.05rem;margin-bottom:12px">Paradas</h2>
+    <ul class="paradas">
+      ${r.puntos
+        .map(
+          (pt) => `<li class="parada">
+        <span class="parada-km">km ${decimal(pt.km)}</span>
+        <span class="parada-texto"><b>${esc(pt.etiqueta)}</b>${pt.texto ? ` ${esc(pt.texto)}` : ""}</span>
+      </li>`
+        )
+        .join("")}
+    </ul>`
         : ""
     }
-
-    ${
-      r.fotos && r.fotos.length
-        ? `<section class="bloque">
-      <h2>Fotos</h2>
-      <div class="galeria" id="galeria">
-        ${r.fotos
-          .map(
-            (f, i) =>
-              `<button type="button" class="galeria-item" data-indice="${i}" aria-label="Ampliar foto ${i + 1}${
-                f.pie ? `: ${esc(f.pie)}` : ""
-              }">
-          <img src="${base}fotos/${r.slug}/${encodeURIComponent(f.archivo)}" alt="${esc(f.pie)}" loading="lazy" decoding="async">
-          ${f.pie ? `<span class="galeria-pie">${esc(f.pie)}</span>` : ""}
-        </button>`
-          )
-          .join("")}
-      </div>
-    </section>`
-        : ""
-    }
-
-    ${
-      videos.length
-        ? `<section class="bloque">
-      <h2>${videos.length === 1 ? "Vídeo" : "Vídeos"}</h2>
-      <div class="videos">
-        ${videos
-          .map(
-            (vi) => `<figure class="video${vi.vertical ? " vertical" : ""}"
-             data-incrustar="${esc(vi.incrustar)}" data-plataforma="${esc(vi.plataforma)}">
-          <div class="video-marco">
-            <button type="button" class="video-boton">
-              <span class="video-play" aria-hidden="true">▶</span>
-              <span class="video-texto">Ver el vídeo<small>Se carga desde ${esc(vi.plataforma)} al pulsar</small></span>
-            </button>
-          </div>
-          <figcaption class="video-enlace"><a href="${esc(vi.enlace)}" rel="noopener noreferrer" target="_blank">Abrir en ${esc(
-              vi.plataforma
-            )}</a></figcaption>
-        </figure>`
-          )
-          .join("")}
-      </div>
-    </section>`
-        : ""
-    }
-
     ${
       practicos.length
-        ? `<section class="bloque">
-      <h2>Datos prácticos</h2>
-      <dl class="practicos">${practicos.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
-    </section>`
+        ? `<dl class="practicos"${r.puntos && r.puntos.length ? ' style="margin-top:20px"' : ""}>${practicos
+            .map(([k, val]) => `<div><dt>${k}</dt><dd>${val}</dd></div>`)
+            .join("")}</dl>`
         : ""
     }
+  </section>
 
-    ${r.avisos ? `<section class="bloque"><h2>Avisos</h2><div class="aviso">${markdown(r.avisos)}</div></section>` : ""}
+  ${
+    r.fotos && r.fotos.length
+      ? `<section class="panel c12">
+    <div class="galeria" id="galeria">
+      ${r.fotos
+        .map(
+          (f, i) => `<button type="button" class="galeria-item" data-indice="${i}" aria-label="Ampliar la foto ${i + 1}${
+            f.pie ? `: ${esc(f.pie)}` : ""
+          }">
+        <img src="${base}fotos/${r.slug}/${encodeURIComponent(f.archivo)}" alt="${esc(f.pie)}" loading="lazy" decoding="async">
+        ${f.pie ? `<span class="galeria-pie">${esc(f.pie)}</span>` : ""}
+      </button>`
+        )
+        .join("")}
+    </div>
+  </section>`
+      : ""
+  }
 
-    ${
-      otras.length
-        ? `<section class="bloque">
-      <h2>Otras rutas</h2>
-      ${otras.map((o) => fila(o, base)).join("")}
-    </section>`
-        : ""
-    }
-  </div>
-</article>
-${visor}
-`;
+  ${
+    videos.length
+      ? `<section class="panel c12">
+    <div class="videos">
+      ${videos
+        .map(
+          (vi) => `<figure class="video${vi.vertical ? " vertical" : ""}" data-incrustar="${esc(vi.incrustar)}" data-plataforma="${esc(vi.plataforma)}">
+        <div class="video-marco">
+          <button type="button" class="video-boton">
+            <span class="video-play" aria-hidden="true">▶</span>
+            Ver el vídeo<small>Se carga desde ${esc(vi.plataforma)} al pulsar</small>
+          </button>
+        </div>
+        <figcaption class="video-enlace"><a href="${esc(vi.enlace)}" rel="noopener noreferrer" target="_blank">Abrir en ${esc(vi.plataforma)}</a></figcaption>
+      </figure>`
+        )
+        .join("")}
+    </div>
+  </section>`
+      : ""
+  }
+
+  ${r.avisos ? `<section class="panel c12"><h2 style="font-size:1.05rem;margin-bottom:10px">Ojo con esto</h2><div class="prosa">${markdown(r.avisos)}</div></section>` : ""}
+
+  ${
+    otras.length
+      ? `<div class="rotulo es-bici"><h2><span class="marca-seccion"></span>Otras rutas</h2></div>
+  ${otras.map((o) => panelRuta(o, base)).join("")}`
+      : ""
+  }
+</div>`;
 
   const datosRuta = JSON.stringify({
-    nombre: r.nombre,
     trazado: r.trazado,
     perfil: r.perfil,
     inicio: r.inicio,
     fin: r.fin,
     distancia: r.distancia,
-    conAltitud: r.conAltitud,
     puntos: (r.puntos || []).map((pt) => ({
-      lat: pt.lat,
-      lon: pt.lon,
-      km: pt.km,
-      tipo: pt.tipo,
-      etiqueta: pt.etiqueta,
-      texto: pt.texto,
-      aviso: pt.aviso,
-      icono: (TIPOS_PUNTO[pt.tipo] || TIPOS_PUNTO.otro).icono,
+      lat: pt.lat, lon: pt.lon, km: pt.km, etiqueta: pt.etiqueta, texto: pt.texto,
+      aviso: pt.aviso, icono: (TIPOS_PUNTO[pt.tipo] || TIPOS_PUNTO.otro).icono,
     })),
   });
 
   return layout({
     base,
     titulo: r.nombre,
-    descripcion: `${km(r.distancia)} km y ${entero(r.desnivelPositivo)} m de desnivel positivo${
-      r.zona ? ` por ${r.zona}` : ""
-    }. Mapa, perfil de altimetría y descarga del GPX.`,
     seccion: "rutas",
-    imagen:
-      r.fotos && r.fotos.length
-        ? `${HOST}${base}fotos/${r.slug}/${encodeURIComponent(r.fotos[0].archivo)}`
-        : "",
+    descripcion: `${km(r.distancia)} km y ${entero(r.desnivelPositivo)} m de desnivel${r.zona ? ` por ${r.zona}` : ""}. Mapa, perfil y GPX para descargar.`,
+    imagen: r.fotos && r.fotos.length ? `${HOST}${base}fotos/${r.slug}/${encodeURIComponent(r.fotos[0].archivo)}` : "",
     contenido,
     scripts: `${LEAFLET}
 <script type="application/json" id="datos-ruta">${datosRuta.replace(/</g, "\\u003c")}</script>
 <script src="${base}assets/ruta.js${v}"></script>
 ${r.fotos && r.fotos.length ? `<script src="${base}assets/galeria.js${v}"></script>` : ""}
-${videos.length ? `<script src="${base}assets/video.js${v}"></script>` : ""}
-${otras.length ? `${datosMapas(otras)}\n<script src="${base}assets/carrusel.js${v}"></script>` : ""}`,
+${videos.length ? `<script src="${base}assets/video.js${v}"></script>` : ""}`,
     ver,
   });
 }
 
-// -------------------------------------------------------------- gimnasio
-//
-// Mismo lenguaje que las rutas: la rutina es una fila con su numero, su
-// nombre grande y los datos en monoespaciada a la derecha. Nada de
-// tarjetas ni de color propio.
-
-/** La linea de metadatos de una rutina, con las barras de separacion. */
-function metaRutina(r) {
-  const partes = [r.dia, r.grupo, r.objetivo, ...r.material];
-  return partes
-    .filter(Boolean)
-    .map((x) => `<span>${esc(x)}</span>`)
-    .join('<span class="sep">/</span>');
-}
-
-function filaRutina(r, base, numero = null) {
-  return `<article class="ruta-fila">
-  <a class="ruta-enlace" href="${base}gimnasio/${r.slug}/">
-    <div class="ruta-cabeza">
-      <div class="ruta-ident">
-        ${numero !== null ? `<span class="ruta-num mono">${String(numero).padStart(2, "0")}</span>` : ""}
-        <div>
-          <div class="ruta-titulo-fila">
-            <h2 class="nombre">${esc(r.nombre)}</h2>
-          </div>
-          <div class="ruta-meta">${metaRutina(r)}</div>
-          ${r.resumen ? `<p class="rutina-resumen">${esc(r.resumen)}</p>` : ""}
-        </div>
-      </div>
-      <div class="ruta-datos">
-        ${dato(entero(r.duracion), "min", "Duración")}
-        ${dato(entero(r.ejercicios), "", "Ejercicios")}
-        ${dato(entero(r.series), "", "Series")}
-      </div>
-    </div>
-  </a>
-</article>`;
-}
+// -------------------------------------------------------- lista rutinas
 
 export function paginaGimnasio({ base, rutinas, ver = "" }) {
   const totalEj = rutinas.reduce((a, r) => a + r.ejercicios, 0);
   const totalGif = rutinas.reduce((a, r) => a + r.gifs.length, 0);
+  const fase = rutinas.find((r) => r.fase);
 
   const contenido = `
-<div class="caja">
-  <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <span>Gimnasio</span></nav>
-  <section class="portada">
-    <div class="portada-fila">
-      <h1 class="nombre titular-portada">Gimnasio</h1>
-      <div class="portada-datos">
-        ${dato(entero(rutinas.length), "", "Rutinas")}
-        ${dato(entero(totalEj), "", "Ejercicios")}
-        ${dato(entero(totalGif), "", "Animaciones")}
-      </div>
+<div class="rejilla">
+  <section class="panel c8">
+    <h1 class="titular">Gimnasio</h1>
+    <p class="sub">Rutinas de fuerza para ciclista, con las series, las cargas, los descansos y la animación de cada ejercicio.</p>
+    ${fase ? `<p class="sub">${esc(fase.fase)}</p>` : ""}
+  </section>
+  <section class="panel c4">
+    <div class="datos">
+      ${dato(entero(rutinas.length), "", "Rutinas")}
+      ${dato(entero(totalEj), "", "Ejercicios")}
+      ${dato(entero(totalGif), "", "Animaciones")}
     </div>
-    <p class="lema">${LEMA_GIMNASIO}</p>
   </section>
 
-  <section class="listado-rutinas">
-    ${
-      rutinas.length
-        ? rutinas.map((r, i) => filaRutina(r, base, i + 1)).join("")
-        : `<p class="lema">Todavía no hay ninguna rutina publicada.</p>`
-    }
-  </section>
+  ${
+    rutinas.length
+      ? rutinas.map((r) => panelRutina(r, base)).join("\n")
+      : `<p class="panel c12">Todavía no hay ninguna rutina publicada.</p>`
+  }
 
-  <p class="nota-fuente">Animaciones de <a href="https://github.com/yuhonas/free-exercise-db" rel="noopener noreferrer" target="_blank">free-exercise-db</a>, de dominio público. Metodología basada en <em>Ciclismo 2.0</em> (Sebastián Sitko), capítulo XX.</p>
+  <section class="panel c12"><p class="pie">Animaciones de <a href="https://github.com/yuhonas/free-exercise-db" rel="noopener noreferrer" target="_blank">free-exercise-db</a>,
+  de dominio público. Metodología basada en <em>Ciclismo 2.0</em>, de Sebastián Sitko.</p></section>
 </div>`;
 
   return layout({
@@ -688,95 +511,84 @@ export function paginaGimnasio({ base, rutinas, ver = "" }) {
   });
 }
 
+// -------------------------------------------------------- ficha rutina
+
+/** Parte el cuerpo de la rutina por sus titulos de primer nivel. */
+function secciones(html) {
+  return html
+    .split(/(?=<h2)/)
+    .map((trozo) => trozo.trim())
+    .filter(Boolean)
+    .map((trozo) => {
+      const m = trozo.match(/^<h2[^>]*>([\s\S]*?)<\/h2>/);
+      return m
+        ? { titulo: m[1].replace(/<[^>]+>/g, ""), cuerpo: trozo.slice(m[0].length) }
+        : { titulo: "", cuerpo: trozo };
+    });
+}
+
 export function paginaRutina({ base, r, otras, ver = "" }) {
+  // Las reglas y la teoría van antes del primer titular: se pliegan, porque
+  // en el gimnasio lo que se mira entre series son los bloques.
+  const bloques = secciones(r.cuerpoHtml).map((b) =>
+    b.titulo ? { ...b, abierto: true } : { titulo: "Antes de empezar", cuerpo: b.cuerpo, abierto: false }
+  );
+
   const contenido = `
-<article class="ficha">
-  <div class="caja">
-    <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <a href="${base}gimnasio/">Gimnasio</a> <span class="sep">/</span> <span>${esc(r.nombre)}</span></nav>
-    <header class="ficha-cabeza ficha-cabeza-rutina">
-      <div>
-        <h1 class="nombre titular">${esc(r.nombre)}</h1>
-        <div class="ruta-meta grande">${metaRutina(r)}</div>
-        ${r.fase ? `<p class="rutina-cuando">${esc(r.fase)}</p>` : ""}
-      </div>
-    </header>
-    <div class="cifras">
-      ${dato(entero(r.duracion), "min", "Duración", { grande: true })}
-      ${dato(entero(r.ejercicios), "", "Ejercicios", { grande: true })}
-      ${dato(entero(r.series), "", "Series", { grande: true })}
-      ${r.intensidad ? dato(esc(r.intensidad), "", "Intensidad", { grande: true }) : ""}
+<div class="rejilla">
+  <section class="panel c8">
+    <h1 class="titular">${esc(r.nombre)}</h1>
+    <p class="sub">${esc([r.dia, r.grupo, r.objetivo].filter(Boolean).join(", "))}</p>
+    ${r.fase ? `<p class="sub">${esc(r.fase)}</p>` : ""}
+  </section>
+  <section class="panel c4">
+    <div class="datos">
+      ${dato(entero(r.duracion), "min", "Duración")}
+      ${dato(entero(r.ejercicios), "", "Ejercicios")}
+      ${dato(entero(r.series), "", "Series")}
     </div>
-    <div class="prosa">
-${r.cuerpoHtml}
-    </div>
-    ${
-      otras && otras.length
-        ? `<section class="otras">
-      <h2 class="grupo-nombre">Las demás rutinas</h2>
-      ${otras.map((o) => filaRutina(o, base)).join("")}
-    </section>`
-        : ""
-    }
-  </div>
-</article>`;
+    ${r.intensidad ? `<div class="material"><span>${esc(r.intensidad)}</span></div>` : ""}
+  </section>
+
+  ${r.resumen ? `<section class="panel c12"><p class="sub" style="margin:0;max-width:72ch">${esc(r.resumen)}</p></section>` : ""}
+
+  ${
+    bloques.length > 1
+      ? `<nav class="panel c12 indice-rutina" aria-label="Secciones de la rutina">
+    ${bloques.map((b, i) => `<a href="#s${i}">${esc(b.titulo)}</a>`).join("")}
+  </nav>`
+      : ""
+  }
+
+  ${bloques
+    .map(
+      (b, i) => `<details class="panel ajustado seccion-rutina c12" id="s${i}"${b.abierto ? " open" : ""}>
+    <summary>${esc(b.titulo)}</summary>
+    <div class="seccion-cuerpo prosa">${b.cuerpo}</div>
+  </details>`
+    )
+    .join("\n")}
+
+  ${
+    otras.length
+      ? `<div class="rotulo es-gimnasio"><h2><span class="marca-seccion"></span>Otras rutinas</h2></div>
+  ${otras.map((o) => panelRutina(o, base)).join("")}`
+      : ""
+  }
+
+  ${
+    r.material.length
+      ? `<section class="panel c12"><h2 style="font-size:1.05rem;margin-bottom:10px">Material</h2>
+    <div class="material">${r.material.map((m) => `<span>${esc(m)}</span>`).join("")}</div></section>`
+      : ""
+  }
+</div>`;
 
   return layout({
     base,
     titulo: r.nombre,
     seccion: "gimnasio",
-    descripcion:
-      r.resumen ||
-      `${r.ejercicios} ejercicios, ${r.series} series, ${r.duracion} min, con la animación de cada ejercicio.`,
-    contenido,
-    ver,
-  });
-}
-
-// --------------------------------------------------------------- portada
-
-export function paginaPortada({ base, rutas, rutinas, ver = "" }) {
-  const totalKm = rutas.reduce((a, r) => a + r.distancia, 0);
-  const totalD = rutas.reduce((a, r) => a + r.desnivelPositivo, 0);
-  const totalEj = rutinas.reduce((a, r) => a + r.ejercicios, 0);
-  const totalMin = rutinas.reduce((a, r) => a + r.duracion, 0);
-
-  const puerta = (href, nombre, texto, datos) => `<a class="puerta" href="${href}">
-  <h2 class="nombre puerta-nombre">${nombre}</h2>
-  <p class="puerta-texto">${texto}</p>
-  <div class="ruta-datos">${datos}</div>
-</a>`;
-
-  const contenido = `
-<div class="caja">
-  <section class="portada">
-    <h1 class="nombre titular-portada">${SITIO}</h1>
-    <p class="lema">${LEMA}</p>
-  </section>
-
-  <section class="puertas">
-    ${puerta(
-      `${base}rutas/`,
-      "Rutas",
-      "Rutas propias con mapa, perfil de altimetría, paradas y el GPX listo para el ciclocomputador.",
-      `${dato(entero(rutas.length), "", "Rutas")}
-       ${dato(entero(totalKm / 1000), "km", "Recorridos")}
-       ${dato(entero(totalD), "m", "Desnivel")}`
-    )}
-    ${puerta(
-      `${base}gimnasio/`,
-      "Gimnasio",
-      "Las rutinas de fuerza que sostienen las rutas: series, cargas y descansos, con la animación de cada ejercicio.",
-      `${dato(entero(rutinas.length), "", "Rutinas")}
-       ${dato(entero(totalEj), "", "Ejercicios")}
-       ${dato(entero(totalMin), "min", "Por semana")}`
-    )}
-  </section>
-</div>`;
-
-  return layout({
-    base,
-    titulo: SITIO,
-    descripcion: `${rutas.length} rutas en bici con mapa y GPX, y ${rutinas.length} rutinas de gimnasio para ciclista con la animación de cada ejercicio.`,
+    descripcion: `${r.nombre}: ${r.ejercicios} ejercicios, ${r.series} series, ${r.duracion} minutos. Con la animación de cada movimiento.`,
     contenido,
     ver,
   });
