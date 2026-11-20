@@ -618,7 +618,7 @@ export function paginaRuta({ base, r, otras, ver = "" }) {
         <div class="video-marco">
           <button type="button" class="video-boton">
             <span class="video-play" aria-hidden="true">▶</span>
-            Ver el vídeo<small>Se carga desde ${esc(vi.plataforma)} al pulsar</small>
+            Cargando el vídeo<small>Se pide a ${esc(vi.plataforma)} al llegar aquí</small>
           </button>
         </div>
         <figcaption class="video-enlace"><a href="${esc(vi.enlace)}" rel="noopener noreferrer" target="_blank">Abrir en ${esc(vi.plataforma)}</a></figcaption>
