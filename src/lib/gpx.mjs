@@ -323,6 +323,32 @@ export function crearLocalizador(points) {
   };
 }
 
+// ------------------------------------------------------------ privacidad
+
+/**
+ * Devuelve el track sin los primeros ni los ultimos `metros` de recorrido.
+ *
+ * Sirve para las rutas que salen y vuelven a casa: el trazado que se
+ * publica (mapa, perfil y GPX de descarga) empieza y acaba a unos cientos
+ * de metros del portal, no en el. Las cifras de la ruta se siguen
+ * calculando sobre el track entero.
+ */
+export function recortarExtremos(points, metros) {
+  if (!metros || metros <= 0 || points.length < 3) return points;
+  const cum = [0];
+  for (let i = 1; i < points.length; i++) {
+    cum.push(cum[i - 1] + haversine(points[i - 1], points[i]));
+  }
+  const total = cum[cum.length - 1];
+  // si recortar se comeria la ruta entera, no se recorta nada
+  if (total <= metros * 2 + 500) return points;
+  let a = 0;
+  while (a < points.length - 1 && cum[a] < metros) a++;
+  let b = points.length - 1;
+  while (b > a + 1 && total - cum[b] < metros) b--;
+  return points.slice(a, b + 1);
+}
+
 // ------------------------------------------------- GPX ligero de descarga
 
 function escXml(s) {

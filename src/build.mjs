@@ -14,7 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
-import { parseGpx, analizar, gpxLigero, crearLocalizador } from "./lib/gpx.mjs";
+import { parseGpx, analizar, gpxLigero, crearLocalizador, recortarExtremos } from "./lib/gpx.mjs";
 import { resolverPuntos, puntosDelGpx } from "./lib/puntos.mjs";
 import { parseFicha, markdown, slugify, esc } from "./lib/content.mjs";
 import {
@@ -159,7 +159,47 @@ async function cargarRutas() {
         dificultad = 0;
       }
 
-      const ligero = gpxLigero(points, nombre);
+      // Privacidad: "privacidad: 500" en la ficha quita los primeros y los
+      // ultimos 500 m del trazado que se publica, para las rutas que salen
+      // de casa. Las cifras (distancia, desnivel, tiempos) no cambian:
+      // siguen siendo las del track completo.
+      let privacidad = 0;
+      if (meta.privacidad !== undefined && meta.privacidad !== "") {
+        const v = Number(meta.privacidad);
+        if (!Number.isFinite(v) || v < 0) {
+          aviso(`${nombreBase}: "privacidad: ${meta.privacidad}" no es un número de metros, se ignora`);
+        } else {
+          privacidad = Math.round(v);
+        }
+      }
+
+      let publicos = points;
+      if (privacidad) {
+        publicos = recortarExtremos(points, privacidad);
+        if (publicos === points) {
+          aviso(`${nombreBase}: la ruta es demasiado corta para recortarle ${privacidad} m por cada punta`);
+          privacidad = 0;
+        } else {
+          const recortadas = analizar(publicos, { bici });
+          metricas.trazado = recortadas.trazado;
+          metricas.inicio = recortadas.inicio;
+          metricas.fin = recortadas.fin;
+          metricas.bbox = recortadas.bbox;
+          // el perfil conserva distancias y altitudes reales, pero las
+          // coordenadas de las puntas se pegan al nuevo inicio y final
+          const r5 = (x) => Math.round(x * 1e5) / 1e5;
+          const ini = publicos[0];
+          const fin = publicos[publicos.length - 1];
+          const total = metricas.distancia;
+          metricas.perfil = metricas.perfil.map(([d, e, g, la, lo]) => {
+            if (d < privacidad) return [d, e, g, r5(ini.lat), r5(ini.lon)];
+            if (d > total - privacidad) return [d, e, g, r5(fin.lat), r5(fin.lon)];
+            return [d, e, g, la, lo];
+          });
+        }
+      }
+
+      const ligero = gpxLigero(publicos, nombre);
       const fotos = await cargarFotos(nombreBase);
 
       // puntos de interes: los de la ficha, mas los waypoints del propio GPX

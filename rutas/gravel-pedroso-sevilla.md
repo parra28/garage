@@ -7,6 +7,7 @@ bici: gravel
 dificultad: 3
 fecha: 2026-08-23
 parking: El Pedroso
+privacidad: 600
 tags: [gravel, bikepacking, lineal, el pedroso, villanueva del rio y minas, monigua, tocina, alcolea del rio, carmona, sevilla]
 videos:
   - https://www.instagram.com/reel/DeIE6LBsdvp/

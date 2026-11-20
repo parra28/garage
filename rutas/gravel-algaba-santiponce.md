@@ -6,7 +6,8 @@ bici: gravel
 dificultad: 2
 fecha: 2026-08-05
 desnivel: 153
-parking: Pino Montano, Sevilla
+parking: Sevilla
+privacidad: 600
 tags: [gravel, circular, entre semana, la algaba, torre de la reina, guillena, santiponce, llana]
 ---
 
