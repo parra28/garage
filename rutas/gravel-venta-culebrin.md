@@ -21,7 +21,7 @@ puntos:
 ## Cómo es
 
 Circular larga por la Sierra Morena extremeña, con salida y llegada en la
-Venta del Culebrín, al norte de Monesterio. **114 kilómetros con 2.270 metros
+Venta del Culebrín, al norte de Monesterio. **114 kilómetros con 2.730 metros
 de desnivel positivo**, repartidos de forma bastante continua: 20 metros de
 subida por kilómetro, sin un puerto que marque la ruta pero sin apenas tramos
 de descanso.

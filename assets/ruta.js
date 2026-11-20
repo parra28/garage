@@ -43,7 +43,7 @@
     mapa.on("mouseout", function () { mapa.scrollWheelZoom.disable(); });
 
     var estilos = getComputedStyle(document.documentElement);
-    var papel = estilos.getPropertyValue("--papel").trim() || "#f4f4f2";
+    var papel = estilos.getPropertyValue("--panel").trim() || "#f8f8f6";
     var tinta = estilos.getPropertyValue("--tinta").trim() || "#0c0c0c";
 
     var puntos = d.trazado || [];
@@ -124,6 +124,46 @@
     return perfil[lo];
   }
 
+  // --------------------------------------------------------------- paradas
+  // pulsar una parada la centra en el mapa y la marca en el perfil
+  function irAParada(metros) {
+    var p = puntoEnKm(metros);
+    if (!p) return;
+    var divMapa = document.getElementById("mapa");
+    if (mapa && divMapa) {
+      var r = divMapa.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > window.innerHeight) divMapa.scrollIntoView({ behavior: "smooth", block: "center" });
+      mapa.setView([p[3], p[4]], Math.max(mapa.getZoom(), 14));
+    }
+    if (document.getElementById("perfil")) {
+      mostrar(metros);
+    } else if (mapa && cursor) {
+      if (!cursorVisible) { cursor.addTo(mapa); cursorVisible = true; }
+      cursor.setLatLng([p[3], p[4]]);
+    }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll(".parada[data-metros], .salida-punto[data-metros]"), function (b) {
+    b.addEventListener("click", function () {
+      Array.prototype.forEach.call(document.querySelectorAll(".parada.activa"), function (x) { x.classList.remove("activa"); });
+      b.classList.add("activa");
+      irAParada(parseFloat(b.dataset.metros));
+    });
+  });
+
+  // ------------------------------------------- barra del GPX en el movil
+  // aparece cuando el boton grande de descarga ya no se ve
+  var botonGpx = document.getElementById("descarga-gpx");
+  var barraGpx = document.getElementById("barra-gpx");
+  if (botonGpx && barraGpx && "IntersectionObserver" in window) {
+    new IntersectionObserver(function (e) {
+      var fuera = !e[0].isIntersecting && e[0].boundingClientRect.top < 0;
+      barraGpx.classList.toggle("visible", fuera);
+      barraGpx.setAttribute("aria-hidden", fuera ? "false" : "true");
+      var enlace = barraGpx.querySelector("a");
+      if (enlace) enlace.tabIndex = fuera ? 0 : -1;
+    }).observe(botonGpx);
+  }
+
   // ---------------------------------------------------------------- perfil
   var svg = document.getElementById("perfil");
   if (!svg) { montarMapa(); return; }
@@ -164,9 +204,12 @@
     globo.innerHTML =
       "km " + formatea(p[0] / 1000, 1) + "  ·  " + formatea(p[1]) + " m  ·  " +
       (p[2] > 0 ? "+" : "") + formatea(p[2], 1) + "%";
-    globo.style.left = rs.left - rc.left + (x / W) * rs.width + "px";
     globo.style.top = rs.top - rc.top + (y / H) * rs.height + "px";
     globo.hidden = false;
+    // que el globo no se salga por los bordes al principio o al final
+    var mitad = globo.offsetWidth / 2 + 4;
+    var izq = rs.left - rc.left + (x / W) * rs.width;
+    globo.style.left = Math.max(mitad, Math.min(rc.width - mitad, izq)) + "px";
 
     if (mapa && cursor) {
       if (!cursorVisible) { cursor.addTo(mapa); cursorVisible = true; }

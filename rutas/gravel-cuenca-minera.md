@@ -6,7 +6,7 @@ bici: gravel
 dificultad: 4
 fecha: 2025-04-19
 desnivel: 2428
-parking: Aznalcóllar
+parking: Aznalcóllar, avenida de Andalucía, junto a la cafetería Los Arcos
 video: https://www.instagram.com/reel/DIt3B5xI-kx/
 tags: [gravel, circular, carriles, cuenca minera, aznalcollar, el madrono, nerva]
 puntos:

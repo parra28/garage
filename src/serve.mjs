@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 // El Garaje - servidor estatico minimo para ver el sitio en local.
-//   BASE=/ node src/build.mjs && node src/serve.mjs
+//   npm run dev
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const DIR = path.join(path.resolve(import.meta.dirname, ".."), "dist");
+const DIR = fileURLToPath(new URL("../dist/", import.meta.url));
 const PUERTO = process.env.PORT || 4178;
 const TIPOS = {
   ".html": "text/html; charset=utf-8",
@@ -13,6 +14,12 @@ const TIPOS = {
   ".js": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8",
   ".svg": "image/svg+xml",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+  ".avif": "image/avif",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
   ".gpx": "application/gpx+xml",
   ".xml": "application/xml",
   ".txt": "text/plain; charset=utf-8",

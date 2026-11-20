@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 // El Garaje - generador del sitio.
 //
-//   node src/build.mjs            -> genera dist/ para https://parra28.github.io/rutas/
-//   BASE=/ node src/build.mjs     -> genera dist/ para abrirlo en local
+//   node src/build.mjs            -> genera dist/ para https://parra28.github.io/garage/
+//   node src/build.mjs --local    -> genera dist/ para abrirlo en local (base "/")
+//   BASE=/otra/ node src/build.mjs -> cualquier otra base
 //
 // Lee cada .gpx de rutas/ junto a su .md del mismo nombre, calcula las
 // metricas y escribe el sitio completo en dist/.
@@ -10,6 +11,7 @@
 import { readdir, readFile, writeFile, mkdir, cp, rm, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { createHash } from "node:crypto";
 
 import { parseGpx, analizar, gpxLigero, crearLocalizador } from "./lib/gpx.mjs";
@@ -21,15 +23,16 @@ import {
   paginaGimnasio,
   paginaRutina,
   paginaPortada,
+  pagina404,
 } from "./lib/render.mjs";
 import { cargarRutinas } from "./lib/gimnasio.mjs";
 import { TIPOS_BICI, ALIAS_BICI, km, entero } from "./lib/formato.mjs";
 
-const RAIZ = path.resolve(import.meta.dirname, "..");
+const RAIZ = fileURLToPath(new URL("..", import.meta.url));
 const DIR_RUTAS = path.join(RAIZ, "rutas");
 const DIR_GIMNASIO = path.join(RAIZ, "gimnasio");
 const DIR_SALIDA = path.join(RAIZ, "dist");
-const BASE = process.env.BASE || "/garage/";
+const BASE = process.argv.includes("--local") ? "/" : process.env.BASE || "/garage/";
 
 const avisos = [];
 const errores = [];
@@ -332,10 +335,7 @@ async function generar() {
   await cp(path.join(RAIZ, "assets"), path.join(DIR_SALIDA, "assets"), { recursive: true });
 
   // 404
-  await escribir(
-    path.join(DIR_SALIDA, "404.html"),
-    `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Página no encontrada · El Garaje</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${BASE}assets/styles.css"></head><body><main class="caja" style="padding:4rem 0;text-align:center"><h1 class="nombre titular">Esta página no existe</h1><p style="margin-top:24px"><a class="boton principal" href="${BASE}">Volver al Garaje</a></p></main></body></html>`
-  );
+  await escribir(path.join(DIR_SALIDA, "404.html"), pagina404({ base: BASE, ver }));
 
   // sitemap y robots
   const host = "https://parra28.github.io";

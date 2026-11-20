@@ -5,7 +5,7 @@ provincia: Sevilla
 bici: gravel
 dificultad: 3
 fecha: 2025-07-06
-parking: Las Colonias
+parking: El Pedroso, en el centro del pueblo (calle Jiménez Castro)
 tags: [gravel, circular, sierra norte, cazalla, san nicolas del puerto, alanis, cordeles, via pecuaria]
 puntos:
   - 52,7 | desayuno | Parada a desayunar en San Nicolás del Puerto
@@ -13,12 +13,12 @@ puntos:
 
 ## Por los cordeles de la Sierra Norte
 
-Circular de 91 kilómetros saliendo de Las Colonias, enlazando el Cordel de
+Circular de 91 kilómetros saliendo de El Pedroso, enlazando el Cordel de
 Alanís con el Cordel de Robledo hasta San Nicolás del Puerto y volviendo por
 la Estación de Cazalla y Cazalla de la Sierra.
 
-El recorrido completo: Las Colonias, El Sotillo, Cordel de Alanís, Cordel de
-Robledo, San Nicolás, Estación de Cazalla, Cazalla y vuelta a Las Colonias.
+El recorrido completo: El Pedroso, El Sotillo, Cordel de Alanís, Cordel de
+Robledo, San Nicolás, Estación de Cazalla, Cazalla y vuelta a El Pedroso.
 
 **1.403 metros de desnivel en 91 kilómetros** son 15 metros por kilómetro: es
 la más corta y la más llevadera de las rutas de aquí. Se mueve entre los 404 y

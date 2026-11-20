@@ -6,7 +6,7 @@ bici: gravel
 dificultad: 3
 fecha: 2026-03-07
 desnivel: 1384
-parking: La Algaba
+parking: Sevilla, avenida de la Ingeniería (Distrito Norte)
 tags: [gravel, circular, guillena, gerena, las pajanosas, trialera]
 puntos:
   - 58,2 | desayuno | Parada a desayunar en El Ronquillo
@@ -15,8 +15,8 @@ puntos:
 
 ## El recorrido
 
-Circular desde La Algaba, subiendo a El Ronquillo por el norte y volviendo
-por Gerena y Las Pajanosas.
+Circular desde el norte de Sevilla: pasa por La Algaba, sube a El Ronquillo
+por el norte y vuelve por Gerena y Las Pajanosas.
 
 - La Algaba
 - Guillena

@@ -5,7 +5,7 @@ provincia: Huelva
 bici: mtb
 dificultad: 5
 fecha: 2024-06-30
-parking: Linares de la Sierra
+parking: Linares de la Sierra, en la carretera HU-8123
 tags: [mtb, btt, circular, sierra de aracena, tecnica, linares]
 videos:
   - https://www.instagram.com/reel/C87DW5joSDZ/

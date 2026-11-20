@@ -141,23 +141,4 @@ Codos altos y atrás, escápulas juntas 1 s.
 
 ---
 
-# 🗓️ Cómo encaja en la semana
-
-```
-LUN  Rodillo Z2 activo
-MAR  CALIDAD 1 — VO2max
-MIE  ESTA RUTINA (30 min) + rodillo Z2 después
-JUE  CALIDAD 2 — Umbral
-VIE  Rodaje suave o descanso
-SAB  Tirada larga
-DOM  Descanso
-```
-
-- 🚴 **Orden del miércoles: PRIMERO el gimnasio, después el rodillo Z2.** Nunca al revés: la fuerza con las piernas ya cargadas no da el estímulo y multiplica el riesgo
-- 📓 **Sigue apuntando los kilos.** Si bajan dos semanas seguidas, no estás manteniendo: revisa sueño y comida antes de tocar la rutina
-- 🏁 **Semana de competición:** se salta. Sin excepciones
-- 🔁 **Si en algún momento vuelves a tener 2 huecos semanales**, recupera `r_fuerza_max_inferior` y `r_fuerza_max_superior`
-
----
-
 *🎞️ Animaciones en la subcarpeta `videos/`, todas de [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (dominio público). Los patrones con barra conviene verlos una vez con un entrenador de sala. Guía de entrenamiento — **no sustituye a tu fisio/traumatólogo**.*

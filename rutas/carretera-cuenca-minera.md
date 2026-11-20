@@ -5,7 +5,7 @@ provincia: Huelva y Sevilla
 bici: carretera
 dificultad: 4
 fecha: 2025-12-20
-parking: Aznalcóllar
+parking: Aznalcóllar, avenida de Andalucía, junto a la cafetería Los Arcos
 tags: [carretera, circular, cuenca minera, el alamo, embalse, aznalcollar]
 puntos:
   - 44,8 | desayuno | Bar de El Berrocal

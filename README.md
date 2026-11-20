@@ -308,10 +308,11 @@ público): dos fotogramas por ejercicio, 850 ms, 320 px de ancho.
 ## Trabajar en local
 
 ```bash
-BASE=/ node src/build.mjs && node src/serve.mjs
+npm run dev
 ```
 
-Y abre http://localhost:4178. Para generar la versión de producción:
+Funciona igual en PowerShell, cmd o bash (Node 18 o posterior). Abre
+http://localhost:4178. Para generar la versión de producción:
 
 ```bash
 node src/build.mjs

@@ -4,8 +4,9 @@
   "private": true,
   "description": "El Garaje - rutas en bici con mapa y GPX, y rutinas de gimnasio para ciclista",
   "type": "module",
+  "engines": { "node": ">=18" },
   "scripts": {
     "build": "node src/build.mjs",
-    "dev": "BASE=/ node src/build.mjs && node src/serve.mjs"
+    "dev": "node src/build.mjs --local && node src/serve.mjs"
   }
 }
