@@ -1,10 +1,16 @@
-# Rutómetro
+# El Garaje
 
-Catálogo de rutas en bici con mapa, perfil de altimetría y descarga del GPX.
-Web estática, sin servidor ni base de datos, publicada en
-**https://parra28.github.io/rutas/**
+Las rutas y el gimnasio en el mismo sitio. Web estática, sin servidor, sin base
+de datos y sin dependencias, publicada en **https://parra28.github.io/garage/**
+
+| Sección | Qué hay | Dónde se edita |
+|---|---|---|
+| **Rutas** | Rutas en bici con mapa, perfil de altimetría, puntos de interés y descarga del GPX | `rutas/` |
+| **Gimnasio** | Rutinas de fuerza para ciclista con series, cargas, descansos y la animación de cada ejercicio | `gimnasio/` |
 
 ---
+
+# Rutas
 
 ## Añadir una ruta
 
@@ -201,6 +207,104 @@ Si una ruta no tiene `.md`, igual se publica: se usan solo los datos del GPX.
 
 ---
 
+# Gimnasio
+
+## Añadir una rutina
+
+Una carpeta por rutina dentro de `gimnasio/`, con dos cosas dentro:
+
+```
+gimnasio/fuerza-max-inferior/
+  rutina.md            metadatos + la rutina escrita en markdown
+  videos/
+    fedb-sentadilla-barra.gif
+    fedb-peso-muerto-rumano.gif
+```
+
+El nombre de la carpeta es la URL: `/gimnasio/fuerza-max-inferior/`.
+
+### Los metadatos
+
+Van arriba del `rutina.md`, entre `---` y `---`:
+
+```markdown
+---
+nombre: Tren inferior — Fuerza máxima
+dia: Viernes
+orden: 1
+duracion: 60
+objetivo: Fuerza máxima
+grupo: Tren inferior
+series: 24
+intensidad: 82–85 % 1RM
+fase: Bloque de invierno · 23 nov – 20 dic
+material: [barra, prensa, mancuernas, rodillo]
+resumen: Sentadilla, peso muerto rumano y trabajo unilateral por encima del 80 %.
+---
+```
+
+| Campo | Obligatorio | Qué es |
+|---|---|---|
+| `nombre` | recomendado | Título de la rutina. Si falta, se usa el de la carpeta. |
+| `dia` | no | Día de la semana. Sale como etiqueta de color. |
+| `orden` | no | Posición en el listado. Sin él va al final. |
+| `duracion` | recomendado | Minutos. Sale en las cifras de cabecera. |
+| `objetivo` | no | `Fuerza máxima`, `Retener`… Sale como etiqueta. |
+| `grupo` | no | `Tren inferior`, `Cuerpo completo`… Etiqueta. |
+| `series` | recomendado | Series totales de la sesión. |
+| `intensidad` | no | `82–85 % 1RM`, `RPE 7`… Texto libre. |
+| `fase` | no | En qué parte de la temporada entra. |
+| `material` | no | Lista entre corchetes. Una etiqueta por elemento. |
+| `resumen` | recomendado | Una o dos frases. Sale en la tarjeta y en el `og:description`. |
+| `ejercicios` | no | Se cuenta solo; ponlo solo si quieres que el build compruebe el número. |
+| `slug` | no | Fuerza la URL. |
+
+### El cuerpo
+
+Markdown normal: títulos, párrafos, listas, **tablas**, citas con `>`, imágenes,
+bloques de código con triple comilla y reglas con `---`.
+
+**Un ejercicio es un `##` que empieza por un código tipo `A1 ·`:**
+
+```markdown
+## A1 · Sentadilla trasera con barra ⭐ *el ejercicio central del bloque*
+
+![Sentadilla trasera con barra](videos/fedb-sentadilla-barra.gif)
+
+*Control de profundidad — sentadilla a banco:*
+
+![Sentadilla a banco](videos/fedb-sentadilla-barra-2.gif)
+
+| Series | Reps | Descanso | Intensidad |
+|:------:|:----:|:--------:|:----------:|
+| **5** | **5** | 3 min | **82–85 % 1RM** |
+
+Barra sobre el trapecio, pies al ancho de hombros…
+
+> 💡 El porqué del ejercicio va en una cita. Sale en un recuadro aparte.
+```
+
+El build cuenta esos `A1`, `A2`… y es el número de ejercicios que muestra la
+ficha. No hace falta escribirlo en ningún sitio.
+
+### Las animaciones
+
+- Van en la subcarpeta `videos/` de la rutina, y se citan como
+  `![Lo que sea](videos/archivo.gif)`. La ruta relativa funciona tal cual
+  porque los GIF se publican al lado de la página.
+- **Si una línea en cursiva va justo antes de una imagen, se convierte en su
+  pie de foto.** Así se marcan las variantes de un ejercicio.
+- Varias animaciones seguidas se colocan **una al lado de otra** en pantalla
+  ancha y apiladas en el móvil.
+- El build avisa de los GIF que se citan y no existen, y de los que existen y
+  no cita nadie.
+
+Las de este repositorio salen de
+[free-exercise-db](https://github.com/yuhonas/free-exercise-db) (dominio
+público): dos fotogramas por ejercicio, 850 ms, 320 px de ancho.
+
+---
+
 ## Trabajar en local
 
 ```bash
@@ -240,16 +344,28 @@ JavaScript en el navegador. Así añadir una ruta seguirá funcionando igual
 dentro de unos años.
 
 ```
-rutas/              Tus GPX y sus fichas .md  ← lo único que tocas
-src/build.mjs       Lee los GPX y escribe el sitio en dist/
-src/lib/gpx.mjs     Parseo del GPX y cálculo de métricas
-src/lib/render.mjs  Plantillas HTML
-src/lib/content.mjs Lectura de las fichas .md
-src/lib/puntos.mjs  Puntos de interés: tipos y colocación sobre la ruta
-src/lib/video.mjs   Reconoce las URL de vídeo y cómo incrustarlas
-src/serve.mjs       Servidor local para pruebas
-assets/             CSS y JavaScript del navegador
-.github/workflows/  Publicación automática en GitHub Pages
+rutas/               Tus GPX y sus fichas .md      ← contenido
+gimnasio/            Una carpeta por rutina         ← contenido
+src/build.mjs        Lee las dos carpetas y escribe el sitio en dist/
+src/lib/gpx.mjs      Parseo del GPX y cálculo de métricas
+src/lib/gimnasio.mjs Lectura de las rutinas y sus animaciones
+src/lib/render.mjs   Plantillas HTML
+src/lib/content.mjs  Fichas .md y el markdown reducido
+src/lib/puntos.mjs   Puntos de interés: tipos y colocación sobre la ruta
+src/lib/video.mjs    Reconoce las URL de vídeo y cómo incrustarlas
+src/serve.mjs        Servidor local para pruebas
+assets/              CSS y JavaScript del navegador
+.github/workflows/   Publicación automática en GitHub Pages
+```
+
+El sitio que sale tiene esta forma:
+
+```
+/                        portada con las dos secciones
+/rutas/                  listado de rutas, con filtros
+/ruta/<slug>/            ficha de una ruta
+/gimnasio/               listado de rutinas
+/gimnasio/<slug>/        ficha de una rutina, con sus GIF al lado
 ```
 
 ### El GPX que se descarga no es el que subes

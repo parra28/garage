@@ -420,3 +420,131 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
 }
+
+/* ======================================================================
+   PORTADA DE DOS SECCIONES
+   ====================================================================== */
+
+.puertas {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  border-top: 1px solid var(--filete);
+}
+.puerta {
+  display: block; text-decoration: none; color: inherit;
+  padding: 26px 0 30px; border-bottom: 1px solid var(--filete);
+}
+.puerta + .puerta { border-top: 1px solid var(--filete); margin-top: -1px; }
+.puerta:hover .puerta-nombre {
+  text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 3px;
+}
+.puerta-nombre { font-size: clamp(30px, 5vw, 54px); }
+.puerta-texto { margin: 14px 0 22px; max-width: 42ch; color: var(--apagado); font-size: 15px; }
+
+@media (min-width: 720px) {
+  .puertas { gap: 0 clamp(28px, 5vw, 72px); }
+  .puerta + .puerta { border-top: 0; margin-top: 0; }
+}
+
+/* ======================================================================
+   GIMNASIO
+   ====================================================================== */
+
+.listado-rutinas { margin-top: 10px; }
+.listado-rutinas .ruta-fila:last-child { border-bottom: 1px solid var(--filete); }
+.rutina-resumen { margin: 10px 0 0; max-width: 54ch; color: var(--apagado); font-size: 14px; }
+.rutina-cuando { margin: 12px 0 0; color: var(--apagado); font-size: 14px; }
+.ficha-cabeza-rutina { grid-template-columns: minmax(0, 1fr); }
+.nota-fuente { margin: 26px 0 40px; color: var(--apagado); font-size: 13px; }
+.otras { margin-top: 56px; border-top: 1px solid var(--filete); padding-top: 10px; }
+.otras .grupo-nombre { margin: 0 0 4px; }
+.otras .ruta-fila:last-child { border-bottom: 1px solid var(--filete); }
+
+/* ----------------------------------------------------------------------
+   PROSA: el cuerpo de una rutina, generado desde el markdown
+   ---------------------------------------------------------------------- */
+
+.prosa { max-width: 70ch; margin: 44px 0 0; font-size: 16px; line-height: 1.62; }
+.prosa > *:first-child { margin-top: 0; }
+
+/* el bloque de la sesion */
+.prosa h2 {
+  margin: 56px 0 18px; font-family: var(--display);
+  font-size: 13px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--apagado);
+  border-top: 1px solid var(--filete); padding-top: 14px;
+}
+/* el ejercicio: es lo que se busca con el movil en la mano */
+.prosa h3 {
+  margin: 38px 0 14px; font-weight: 800; letter-spacing: -0.02em;
+  font-size: 23px; line-height: 1.1;
+}
+.prosa h3 em { font-weight: 400; font-style: normal; color: var(--apagado); font-size: 0.72em; }
+.prosa h4 { margin: 26px 0 8px; font-size: 16px; font-weight: 600; }
+.prosa p { margin: 0 0 14px; }
+.prosa ul, .prosa ol { margin: 0 0 16px; padding-left: 1.3em; }
+.prosa li { margin-bottom: 8px; }
+.prosa li::marker { color: var(--apagado); }
+.prosa hr { border: 0; border-top: 1px solid var(--filete); margin: 34px 0; }
+.prosa a { color: inherit; }
+
+.prosa code {
+  font-family: var(--mono); font-size: 0.86em;
+  background: color-mix(in srgb, var(--tinta) 6%, transparent); padding: 1px 5px;
+}
+.prosa pre {
+  font-family: var(--mono); border: 1px solid var(--filete);
+  padding: 16px; overflow-x: auto; margin: 0 0 18px;
+}
+.prosa pre code { background: none; padding: 0; font-size: 13px; line-height: 1.8; }
+
+/* la cita lleva el porque de cada ejercicio y los avisos */
+.prosa blockquote {
+  margin: 0 0 18px; padding: 2px 0 2px 18px;
+  border-left: 2px solid var(--tinta); color: var(--apagado);
+}
+.prosa blockquote p { margin: 0 0 10px; }
+.prosa blockquote p:last-child { margin-bottom: 0; }
+.prosa blockquote strong { color: var(--tinta); }
+
+/* --------------------------------------------------- tablas de series */
+
+.tabla-scroll { overflow-x: auto; margin: 0 0 20px; -webkit-overflow-scrolling: touch; }
+.prosa table {
+  border-collapse: collapse; width: 100%; min-width: 300px;
+  font-size: 15px; border-top: 1px solid var(--filete);
+}
+.prosa thead th {
+  font-family: var(--mono); font-size: 10px; font-weight: 500;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--apagado);
+  white-space: nowrap; text-align: left;
+  padding: 9px 14px 9px 0; border-bottom: 1px solid var(--filete);
+}
+.prosa tbody td {
+  padding: 11px 14px 11px 0; border-bottom: 1px solid var(--filete);
+  vertical-align: top;
+}
+.prosa thead th:last-child, .prosa tbody td:last-child { padding-right: 0; }
+.prosa tbody strong { font-variant-numeric: tabular-nums; }
+
+/* -------------------------------------------------- animaciones (GIF) */
+
+/* En linea, para ver el ejercicio y sus variantes de un vistazo en vez de
+   tener que hacer scroll entre ellos. */
+.prosa .animacion {
+  display: inline-block; vertical-align: top;
+  width: min(280px, 100%); margin: 0 10px 18px 0;
+}
+.prosa .animacion img {
+  display: block; width: 100%; height: auto;
+  border: 1px solid var(--filete); background: #fff;
+}
+.prosa figure.animacion figcaption {
+  margin-top: 8px; color: var(--apagado); font-size: 13px; line-height: 1.45;
+}
+
+@media (max-width: 560px) {
+  .prosa { font-size: 16px; }
+  .prosa h3 { font-size: 20px; }
+  .prosa .animacion { display: block; width: 100%; margin-right: 0; }
+  .prosa table { font-size: 14px; }
+}

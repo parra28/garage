@@ -1,4 +1,4 @@
-// Rutometro - visor de fotos a pantalla completa.
+// El Garaje - visor de fotos a pantalla completa.
 (function () {
   var galeria = document.getElementById("galeria");
   var visor = document.getElementById("visor");

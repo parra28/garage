@@ -1,4 +1,4 @@
-// Rutometro - mapa y perfil de una ruta, sincronizados.
+// El Garaje - mapa y perfil de una ruta, sincronizados.
 (function () {
   var nodo = document.getElementById("datos-ruta");
   if (!nodo) return;

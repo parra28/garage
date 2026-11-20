@@ -1,4 +1,4 @@
-// Rutometro - carga cada video solo cuando el visitante lo pide.
+// El Garaje - carga cada video solo cuando el visitante lo pide.
 (function () {
   var cajas = Array.prototype.slice.call(document.querySelectorAll(".video[data-incrustar]"));
   cajas.forEach(function (caja) {

@@ -1,4 +1,4 @@
-// Rutometro - lectura de las fichas .md (metadatos + descripcion).
+// El Garaje - lectura de las fichas .md (metadatos + descripcion).
 
 /** Escapa texto para insertarlo en HTML. */
 export function esc(s) {
@@ -73,9 +73,28 @@ export function parseFicha(texto) {
   return { meta, cuerpo: m[2].trim() };
 }
 
+// ------------------------------------------------------------------- markdown
+
+/**
+ * Deja pasar solo rutas relativas (videos/x.gif) y URL http(s).
+ * Corta cualquier otro esquema, javascript: incluido.
+ */
+function urlSegura(u) {
+  const l = String(u).trim();
+  if (/^https?:\/\//i.test(l)) return l;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(l) || l.startsWith("//")) return "";
+  return l;
+}
+
+const RE_IMG = /!\[([^\]]*)\]\(([^\s)]+)\)/;
+
 function enLinea(s) {
-  // negrita, cursiva, codigo y enlaces, sobre texto ya escapado
+  // sobre texto ya escapado: imagen, codigo, negrita, cursiva y enlaces
   return s
+    .replace(new RegExp(RE_IMG.source, "g"), (_, alt, src) => {
+      const u = urlSegura(src);
+      return u ? `<img src="${u}" alt="${alt}" loading="lazy" decoding="async">` : "";
+    })
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>")
@@ -85,67 +104,164 @@ function enLinea(s) {
     );
 }
 
+/** Celdas de una fila de tabla, sin los pipes de los extremos. */
+function celdas(linea) {
+  let l = linea.trim();
+  if (l.startsWith("|")) l = l.slice(1);
+  if (l.endsWith("|")) l = l.slice(0, -1);
+  return l.split("|").map((c) => c.trim());
+}
+
+/** La fila "|:---:|---|" que separa la cabecera del cuerpo. */
+function esSeparadorTabla(l) {
+  return l.includes("|") && /-/.test(l) && /^[\s|:-]+$/.test(l);
+}
+
+function alineacion(c) {
+  const izq = c.startsWith(":");
+  const der = c.endsWith(":");
+  if (izq && der) return "center";
+  if (der) return "right";
+  return "";
+}
+
+const esImagenSola = (l) => new RegExp(`^${RE_IMG.source}$`).test(l.trim());
+const esPieCursiva = (l) => /^\*[^*].*\*$/.test(l.trim());
+
 /**
- * Markdown reducido: titulos (## y ###), parrafos, listas con guion,
- * listas numeradas, citas con >, negrita, cursiva, codigo y enlaces.
- * Suficiente para describir una ruta; no es un markdown completo.
+ * Markdown reducido pero suficiente para una ficha de ruta y para una rutina
+ * de gimnasio: titulos, parrafos, listas, citas de varios parrafos, tablas,
+ * imagenes (con pie cuando vienen precedidas de una linea en cursiva),
+ * bloques de codigo, reglas horizontales, negrita, cursiva y enlaces.
  */
 export function markdown(texto) {
   if (!texto) return "";
-  const bloques = esc(texto).split(/\n{2,}/);
+  const lineas = esc(String(texto).replace(/\r\n/g, "\n")).split("\n");
   const html = [];
+  let i = 0;
 
-  for (const bloque of bloques) {
-    const lineas = bloque.split("\n").filter((l) => l.trim() !== "");
-    if (lineas.length === 0) continue;
+  const figura = (img, pie) => {
+    const cuerpo = enLinea(img.trim());
+    if (!pie) return `<p class="animacion">${cuerpo}</p>`;
+    const texto = pie.trim().replace(/^\*|\*$/g, "");
+    return `<figure class="animacion"><p>${cuerpo}</p><figcaption>${enLinea(texto)}</figcaption></figure>`;
+  };
 
-    if (/^###\s+/.test(lineas[0])) {
-      html.push(`<h4>${enLinea(lineas[0].replace(/^###\s+/, ""))}</h4>`);
-      if (lineas.length > 1) {
-        html.push(`<p>${enLinea(lineas.slice(1).join(" "))}</p>`);
-      }
+  // Indice de la siguiente linea con contenido, o -1.
+  const siguiente = (desde) => {
+    for (let j = desde; j < lineas.length; j++) if (lineas[j].trim() !== "") return j;
+    return -1;
+  };
+
+  while (i < lineas.length) {
+    const l = lineas[i];
+
+    if (l.trim() === "") { i++; continue; }
+
+    // bloque de codigo cercado
+    if (/^\s*```/.test(l)) {
+      i++;
+      const cuerpo = [];
+      while (i < lineas.length && !/^\s*```/.test(lineas[i])) cuerpo.push(lineas[i++]);
+      i++;
+      html.push(`<pre><code>${cuerpo.join("\n")}</code></pre>`);
       continue;
     }
-    if (/^##\s+/.test(lineas[0])) {
-      html.push(`<h3>${enLinea(lineas[0].replace(/^##\s+/, ""))}</h3>`);
-      if (lineas.length > 1) {
-        html.push(`<p>${enLinea(lineas.slice(1).join(" "))}</p>`);
+
+    // regla horizontal
+    if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(l)) { html.push("<hr>"); i++; continue; }
+
+    // titulos: # -> h2, ## -> h3, ### -> h4...
+    const t = l.match(/^(#{1,6})\s+(.*\S)\s*$/);
+    if (t) {
+      const n = Math.min(t[1].length + 1, 6);
+      html.push(`<h${n}>${enLinea(t[2])}</h${n}>`);
+      i++; continue;
+    }
+
+    // tabla
+    if (l.includes("|") && i + 1 < lineas.length && esSeparadorTabla(lineas[i + 1])) {
+      const cab = celdas(l);
+      const alin = celdas(lineas[i + 1]).map(alineacion);
+      i += 2;
+      const filas = [];
+      while (i < lineas.length && lineas[i].includes("|") && lineas[i].trim() !== "") {
+        filas.push(celdas(lineas[i])); i++;
       }
+      const th = cab
+        .map((c, k) => `<th${alin[k] ? ` style="text-align:${alin[k]}"` : ""}>${enLinea(c)}</th>`)
+        .join("");
+      const tb = filas
+        .map(
+          (f) =>
+            "<tr>" +
+            cab
+              .map(
+                (_, k) =>
+                  `<td${alin[k] ? ` style="text-align:${alin[k]}"` : ""}>${enLinea(f[k] ?? "")}</td>`
+              )
+              .join("") +
+            "</tr>"
+        )
+        .join("");
+      html.push(`<div class="tabla-scroll"><table><thead><tr>${th}</tr></thead><tbody>${tb}</tbody></table></div>`);
       continue;
     }
-    // Listas. Un elemento puede ocupar varias lineas: las que no empiezan
-    // por marca se juntan con el elemento anterior.
-    const agrupar = (marca) => {
-      const items = [];
-      for (const l of lineas) {
-        if (marca.test(l)) items.push(l.replace(marca, ""));
-        else if (items.length) items[items.length - 1] += " " + l.trim();
-        else return null;
-      }
-      return items;
-    };
 
-    if (/^\s*[-*]\s+/.test(lineas[0])) {
-      const items = agrupar(/^\s*[-*]\s+/);
-      if (items) {
-        html.push(`<ul>${items.map((x) => `<li>${enLinea(x)}</li>`).join("")}</ul>`);
-        continue;
+    // imagen sola, con el pie en cursiva de la linea anterior si lo hay
+    if (esImagenSola(l)) { html.push(figura(l, null)); i++; continue; }
+    if (esPieCursiva(l)) {
+      const j = siguiente(i + 1);
+      if (j > -1 && esImagenSola(lineas[j])) {
+        html.push(figura(lineas[j], l)); i = j + 1; continue;
       }
     }
-    if (/^\s*\d+[.)]\s+/.test(lineas[0])) {
-      const items = agrupar(/^\s*\d+[.)]\s+/);
-      if (items) {
-        html.push(`<ol>${items.map((x) => `<li>${enLinea(x)}</li>`).join("")}</ol>`);
-        continue;
+
+    // cita: lineas consecutivas que empiezan por >, con parrafos dentro
+    if (/^\s*&gt;/.test(l)) {
+      const dentro = [];
+      while (i < lineas.length && /^\s*&gt;/.test(lineas[i])) {
+        dentro.push(lineas[i].replace(/^\s*&gt;\s?/, "")); i++;
       }
-    }
-    if (lineas.every((l) => /^\s*&gt;\s?/.test(l))) {
+      const parrafos = [];
+      let actual = [];
+      for (const d of dentro) {
+        if (d.trim() === "") { if (actual.length) parrafos.push(actual); actual = []; }
+        else actual.push(d);
+      }
+      if (actual.length) parrafos.push(actual);
       html.push(
-        `<blockquote>${enLinea(lineas.map((l) => l.replace(/^\s*&gt;\s?/, "")).join(" "))}</blockquote>`
+        `<blockquote>${parrafos.map((p) => `<p>${enLinea(p.join(" "))}</p>`).join("")}</blockquote>`
       );
       continue;
     }
-    html.push(`<p>${enLinea(lineas.join(" "))}</p>`);
+
+    // listas; un elemento puede ocupar varias lineas
+    const lista = (marca, etiqueta) => {
+      if (!marca.test(l)) return false;
+      const items = [];
+      while (i < lineas.length && lineas[i].trim() !== "") {
+        const li = lineas[i];
+        if (marca.test(li)) items.push(li.replace(marca, ""));
+        else if (items.length) items[items.length - 1] += " " + li.trim();
+        else break;
+        i++;
+      }
+      if (!items.length) return false;
+      html.push(`<${etiqueta}>${items.map((x) => `<li>${enLinea(x)}</li>`).join("")}</${etiqueta}>`);
+      return true;
+    };
+    if (lista(/^\s*[-*]\s+/, "ul")) continue;
+    if (lista(/^\s*\d+[.)]\s+/, "ol")) continue;
+
+    // parrafo
+    const parrafo = [];
+    while (i < lineas.length && lineas[i].trim() !== "") {
+      if (/^\s*(```|&gt;|#{1,6}\s)/.test(lineas[i]) || esImagenSola(lineas[i])) break;
+      parrafo.push(lineas[i]); i++;
+    }
+    if (parrafo.length) html.push(`<p>${enLinea(parrafo.join(" "))}</p>`);
+    else i++;
   }
   return html.join("\n");
 }

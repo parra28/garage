@@ -1,4 +1,4 @@
-// Rutometro - plantillas HTML.
+// El Garaje - plantillas HTML.
 //
 // Lenguaje visual: tinta sobre papel, filetes de un pixel, sin esquinas
 // redondeadas, sin sombras y sin degradados. Los datos van en monoespaciada,
@@ -21,8 +21,10 @@ import {
   fechaLarga,
 } from "./formato.mjs";
 
-const SITIO = "Rutómetro";
-const LEMA = "Rutas propias trazadas sobre el terreno. Cada una con su perfil, sus paradas y el GPX listo para descargar.";
+const SITIO = "El Garaje";
+const LEMA = "Las rutas y el gimnasio en el mismo sitio.";
+const LEMA_RUTAS = "Rutas propias trazadas sobre el terreno. Cada una con su perfil, sus paradas y el GPX listo para descargar.";
+const LEMA_GIMNASIO = "Las rutinas de fuerza del bloque de invierno. Series, cargas, descansos y la animación de cada ejercicio.";
 const HOST = "https://parra28.github.io";
 
 const FUENTES = `<link rel="preconnect" href="https://fonts.googleapis.com">
@@ -167,9 +169,9 @@ function meta(r) {
 
 // ------------------------------------------------------------------ esqueleto
 
-function layout({ base, titulo, descripcion, ruta, contenido, scripts = "", imagen = "", ver = "" }) {
+function layout({ base, titulo, descripcion, seccion = "", contenido, scripts = "", imagen = "", ver = "" }) {
   const v = ver ? `?v=${ver}` : "";
-  const tituloCompleto = titulo === SITIO ? `${SITIO} · Rutas en bici` : `${titulo} · ${SITIO}`;
+  const tituloCompleto = titulo === SITIO ? `${SITIO} · ${LEMA}` : `${titulo} · ${SITIO}`;
   return `<!doctype html>
 <html lang="es">
 <head>
@@ -187,16 +189,17 @@ ${FUENTES}
 <link rel="stylesheet" href="${base}assets/styles.css${v}">
 <link rel="icon" href="${base}assets/icono.svg" type="image/svg+xml">
 <script>
-try { var t = localStorage.getItem("rutometro-tema"); if (t) document.documentElement.dataset.tema = t; } catch (e) {}
+try { var t = localStorage.getItem("garaje-tema"); if (t) document.documentElement.dataset.tema = t; } catch (e) {}
 </script>
 </head>
 <body>
 <a class="salto" href="#principal">Ir al contenido</a>
 <header class="barra">
   <div class="caja barra-fila">
-    <a class="marca" href="${base}">RUTÓMETRO</a>
+    <a class="marca" href="${base}">EL GARAJE</a>
     <div class="barra-der">
-      ${ruta ? `<a class="volver" href="${base}">Todas las rutas</a>` : ""}
+      <a class="seccion${seccion === "rutas" ? " activa" : ""}" href="${base}rutas/"${seccion === "rutas" ? ' aria-current="page"' : ""}>Rutas</a>
+      <a class="seccion${seccion === "gimnasio" ? " activa" : ""}" href="${base}gimnasio/"${seccion === "gimnasio" ? ' aria-current="page"' : ""}>Gimnasio</a>
       <button type="button" id="boton-tema" class="boton-tema" aria-label="Cambiar entre tema claro y oscuro">
         <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg>
       </button>
@@ -208,7 +211,7 @@ ${contenido}
 </main>
 <footer class="pie">
   <div class="caja">
-    <p>Rutas propias, trazadas y verificadas sobre el terreno. Los archivos GPX se ofrecen tal cual: comprueba siempre el estado de los caminos y la normativa de la zona antes de salir.</p>
+    <p>Rutas propias, trazadas y verificadas sobre el terreno, y las rutinas de gimnasio que las sostienen. Los archivos GPX se ofrecen tal cual: comprueba siempre el estado de los caminos y la normativa de la zona antes de salir. Las rutinas son una guía de entrenamiento, no una prescripción médica.</p>
   </div>
 </footer>
 <script src="${base}assets/tema.js${v}"></script>
@@ -301,16 +304,17 @@ export function paginaIndice({ base, rutas, zonas, ver = "" }) {
 
   const contenido = `
 <div class="caja">
+  <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <span>Rutas</span></nav>
   <section class="portada">
     <div class="portada-fila">
-      <h1 class="nombre titular-portada">${SITIO}</h1>
+      <h1 class="nombre titular-portada">Rutas</h1>
       <div class="portada-datos">
         ${dato(entero(rutas.length), "", "Rutas")}
         ${dato(entero(totalKm / 1000), "km", "Recorridos")}
         ${dato(entero(totalD), "m", "Desnivel")}
       </div>
     </div>
-    <p class="lema">${LEMA}</p>
+    <p class="lema">${LEMA_RUTAS}</p>
   </section>
 
   <section class="controles" aria-label="Buscar y filtrar">
@@ -392,7 +396,8 @@ export function paginaIndice({ base, rutas, zonas, ver = "" }) {
 
   return layout({
     base,
-    titulo: SITIO,
+    titulo: "Rutas",
+    seccion: "rutas",
     descripcion: `${rutas.length} rutas en bici de carretera, gravel y BTT con mapa, perfil de altimetría y descarga del archivo GPX.`,
     contenido,
     scripts: `${LEAFLET}
@@ -432,7 +437,7 @@ export function paginaRuta({ base, r, otras, ver = "" }) {
   const contenido = `
 <article class="ficha">
   <div class="caja">
-    <nav class="migas"><a href="${base}">Rutas</a> <span class="sep">/</span> <span>${esc(r.nombre)}</span></nav>
+    <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <a href="${base}rutas/">Rutas</a> <span class="sep">/</span> <span>${esc(r.nombre)}</span></nav>
     <header class="ficha-cabeza">
       <div>
         ${distintivo(r)}
@@ -588,7 +593,7 @@ ${visor}
     descripcion: `${km(r.distancia)} km y ${entero(r.desnivelPositivo)} m de desnivel positivo${
       r.zona ? ` por ${r.zona}` : ""
     }. Mapa, perfil de altimetría y descarga del GPX.`,
-    ruta: true,
+    seccion: "rutas",
     imagen:
       r.fotos && r.fotos.length
         ? `${HOST}${base}fotos/${r.slug}/${encodeURIComponent(r.fotos[0].archivo)}`
@@ -600,6 +605,179 @@ ${visor}
 ${r.fotos && r.fotos.length ? `<script src="${base}assets/galeria.js${v}"></script>` : ""}
 ${videos.length ? `<script src="${base}assets/video.js${v}"></script>` : ""}
 ${otras.length ? `${datosMapas(otras)}\n<script src="${base}assets/carrusel.js${v}"></script>` : ""}`,
+    ver,
+  });
+}
+
+// -------------------------------------------------------------- gimnasio
+//
+// Mismo lenguaje que las rutas: la rutina es una fila con su numero, su
+// nombre grande y los datos en monoespaciada a la derecha. Nada de
+// tarjetas ni de color propio.
+
+/** La linea de metadatos de una rutina, con las barras de separacion. */
+function metaRutina(r) {
+  const partes = [r.dia, r.grupo, r.objetivo, ...r.material];
+  return partes
+    .filter(Boolean)
+    .map((x) => `<span>${esc(x)}</span>`)
+    .join('<span class="sep">/</span>');
+}
+
+function filaRutina(r, base, numero = null) {
+  return `<article class="ruta-fila">
+  <a class="ruta-enlace" href="${base}gimnasio/${r.slug}/">
+    <div class="ruta-cabeza">
+      <div class="ruta-ident">
+        ${numero !== null ? `<span class="ruta-num mono">${String(numero).padStart(2, "0")}</span>` : ""}
+        <div>
+          <div class="ruta-titulo-fila">
+            <h2 class="nombre">${esc(r.nombre)}</h2>
+          </div>
+          <div class="ruta-meta">${metaRutina(r)}</div>
+          ${r.resumen ? `<p class="rutina-resumen">${esc(r.resumen)}</p>` : ""}
+        </div>
+      </div>
+      <div class="ruta-datos">
+        ${dato(entero(r.duracion), "min", "Duración")}
+        ${dato(entero(r.ejercicios), "", "Ejercicios")}
+        ${dato(entero(r.series), "", "Series")}
+      </div>
+    </div>
+  </a>
+</article>`;
+}
+
+export function paginaGimnasio({ base, rutinas, ver = "" }) {
+  const totalEj = rutinas.reduce((a, r) => a + r.ejercicios, 0);
+  const totalGif = rutinas.reduce((a, r) => a + r.gifs.length, 0);
+
+  const contenido = `
+<div class="caja">
+  <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <span>Gimnasio</span></nav>
+  <section class="portada">
+    <div class="portada-fila">
+      <h1 class="nombre titular-portada">Gimnasio</h1>
+      <div class="portada-datos">
+        ${dato(entero(rutinas.length), "", "Rutinas")}
+        ${dato(entero(totalEj), "", "Ejercicios")}
+        ${dato(entero(totalGif), "", "Animaciones")}
+      </div>
+    </div>
+    <p class="lema">${LEMA_GIMNASIO}</p>
+  </section>
+
+  <section class="listado-rutinas">
+    ${
+      rutinas.length
+        ? rutinas.map((r, i) => filaRutina(r, base, i + 1)).join("")
+        : `<p class="lema">Todavía no hay ninguna rutina publicada.</p>`
+    }
+  </section>
+
+  <p class="nota-fuente">Animaciones de <a href="https://github.com/yuhonas/free-exercise-db" rel="noopener noreferrer" target="_blank">free-exercise-db</a>, de dominio público. Metodología basada en <em>Ciclismo 2.0</em> (Sebastián Sitko), capítulo XX.</p>
+</div>`;
+
+  return layout({
+    base,
+    titulo: "Gimnasio",
+    seccion: "gimnasio",
+    descripcion: `${rutinas.length} rutinas de fuerza para ciclista con ${totalEj} ejercicios y la animación de cada uno.`,
+    contenido,
+    ver,
+  });
+}
+
+export function paginaRutina({ base, r, otras, ver = "" }) {
+  const contenido = `
+<article class="ficha">
+  <div class="caja">
+    <nav class="migas"><a href="${base}">${SITIO}</a> <span class="sep">/</span> <a href="${base}gimnasio/">Gimnasio</a> <span class="sep">/</span> <span>${esc(r.nombre)}</span></nav>
+    <header class="ficha-cabeza ficha-cabeza-rutina">
+      <div>
+        <h1 class="nombre titular">${esc(r.nombre)}</h1>
+        <div class="ruta-meta grande">${metaRutina(r)}</div>
+        ${r.fase ? `<p class="rutina-cuando">${esc(r.fase)}</p>` : ""}
+      </div>
+    </header>
+    <div class="cifras">
+      ${dato(entero(r.duracion), "min", "Duración", { grande: true })}
+      ${dato(entero(r.ejercicios), "", "Ejercicios", { grande: true })}
+      ${dato(entero(r.series), "", "Series", { grande: true })}
+      ${r.intensidad ? dato(esc(r.intensidad), "", "Intensidad", { grande: true }) : ""}
+    </div>
+    <div class="prosa">
+${r.cuerpoHtml}
+    </div>
+    ${
+      otras && otras.length
+        ? `<section class="otras">
+      <h2 class="grupo-nombre">Las demás rutinas</h2>
+      ${otras.map((o) => filaRutina(o, base)).join("")}
+    </section>`
+        : ""
+    }
+  </div>
+</article>`;
+
+  return layout({
+    base,
+    titulo: r.nombre,
+    seccion: "gimnasio",
+    descripcion:
+      r.resumen ||
+      `${r.ejercicios} ejercicios, ${r.series} series, ${r.duracion} min, con la animación de cada ejercicio.`,
+    contenido,
+    ver,
+  });
+}
+
+// --------------------------------------------------------------- portada
+
+export function paginaPortada({ base, rutas, rutinas, ver = "" }) {
+  const totalKm = rutas.reduce((a, r) => a + r.distancia, 0);
+  const totalD = rutas.reduce((a, r) => a + r.desnivelPositivo, 0);
+  const totalEj = rutinas.reduce((a, r) => a + r.ejercicios, 0);
+  const totalMin = rutinas.reduce((a, r) => a + r.duracion, 0);
+
+  const puerta = (href, nombre, texto, datos) => `<a class="puerta" href="${href}">
+  <h2 class="nombre puerta-nombre">${nombre}</h2>
+  <p class="puerta-texto">${texto}</p>
+  <div class="ruta-datos">${datos}</div>
+</a>`;
+
+  const contenido = `
+<div class="caja">
+  <section class="portada">
+    <h1 class="nombre titular-portada">${SITIO}</h1>
+    <p class="lema">${LEMA}</p>
+  </section>
+
+  <section class="puertas">
+    ${puerta(
+      `${base}rutas/`,
+      "Rutas",
+      "Rutas propias con mapa, perfil de altimetría, paradas y el GPX listo para el ciclocomputador.",
+      `${dato(entero(rutas.length), "", "Rutas")}
+       ${dato(entero(totalKm / 1000), "km", "Recorridos")}
+       ${dato(entero(totalD), "m", "Desnivel")}`
+    )}
+    ${puerta(
+      `${base}gimnasio/`,
+      "Gimnasio",
+      "Las rutinas de fuerza que sostienen las rutas: series, cargas y descansos, con la animación de cada ejercicio.",
+      `${dato(entero(rutinas.length), "", "Rutinas")}
+       ${dato(entero(totalEj), "", "Ejercicios")}
+       ${dato(entero(totalMin), "min", "Por semana")}`
+    )}
+  </section>
+</div>`;
+
+  return layout({
+    base,
+    titulo: SITIO,
+    descripcion: `${rutas.length} rutas en bici con mapa y GPX, y ${rutinas.length} rutinas de gimnasio para ciclista con la animación de cada ejercicio.`,
+    contenido,
     ver,
   });
 }

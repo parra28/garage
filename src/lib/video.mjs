@@ -1,4 +1,4 @@
-// Rutometro - video incrustado en la ficha de una ruta.
+// El Garaje - video incrustado en la ficha de una ruta.
 //
 // En la ficha:  video: https://www.instagram.com/reel/XXXXXXXX/
 //

@@ -1,4 +1,4 @@
-// Rutometro - cambio entre tema claro y oscuro.
+// El Garaje - cambio entre tema claro y oscuro.
 (function () {
   var boton = document.getElementById("boton-tema");
   if (!boton) return;
@@ -11,7 +11,7 @@
     }
     var nuevo = actual === "oscuro" ? "claro" : "oscuro";
     raiz.dataset.tema = nuevo;
-    try { localStorage.setItem("rutometro-tema", nuevo); } catch (e) {}
-    document.dispatchEvent(new CustomEvent("rutometro:tema", { detail: nuevo }));
+    try { localStorage.setItem("garaje-tema", nuevo); } catch (e) {}
+    document.dispatchEvent(new CustomEvent("garaje:tema", { detail: nuevo }));
   });
 })();

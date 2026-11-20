@@ -1,8 +1,8 @@
 {
-  "name": "rutometro",
+  "name": "el-garaje",
   "version": "1.0.0",
   "private": true,
-  "description": "Rutometro - catalogo estatico de rutas en bici con mapa, altimetria y descarga GPX",
+  "description": "El Garaje - rutas en bici con mapa y GPX, y rutinas de gimnasio para ciclista",
   "type": "module",
   "scripts": {
     "build": "node src/build.mjs",

@@ -1,4 +1,4 @@
-// Rutometro - deslizable de cada fila: perfil, mapa y fotos.
+// El Garaje - deslizable de cada fila: perfil, mapa y fotos.
 // El mapa no se monta hasta que alguien se desliza hasta el, asi que la
 // portada no pide una sola tesela mientras nadie la pida.
 (function () {
@@ -105,7 +105,7 @@
     }
   });
 
-  document.addEventListener("rutometro:filtrado", function () {
+  document.addEventListener("garaje:filtrado", function () {
     carruseles.forEach(function (c) {
       if (c.volverAlInicio) c.volverAlInicio();
     });

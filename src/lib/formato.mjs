@@ -1,4 +1,4 @@
-// Rutometro - formato de numeros y etiquetas en castellano.
+// El Garaje - formato de numeros y etiquetas en castellano.
 
 // Los iconos son del firme, no de la bici: a tamaño pequeño una carretera
 // con su línea discontinua, un carril con grava y una montaña se distinguen

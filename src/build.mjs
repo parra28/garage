@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Rutometro - generador del sitio.
+// El Garaje - generador del sitio.
 //
 //   node src/build.mjs            -> genera dist/ para https://parra28.github.io/rutas/
 //   BASE=/ node src/build.mjs     -> genera dist/ para abrirlo en local
@@ -15,13 +15,21 @@ import { createHash } from "node:crypto";
 import { parseGpx, analizar, gpxLigero, crearLocalizador } from "./lib/gpx.mjs";
 import { resolverPuntos, puntosDelGpx } from "./lib/puntos.mjs";
 import { parseFicha, markdown, slugify, esc } from "./lib/content.mjs";
-import { paginaIndice, paginaRuta } from "./lib/render.mjs";
+import {
+  paginaIndice,
+  paginaRuta,
+  paginaGimnasio,
+  paginaRutina,
+  paginaPortada,
+} from "./lib/render.mjs";
+import { cargarRutinas } from "./lib/gimnasio.mjs";
 import { TIPOS_BICI, ALIAS_BICI, km, entero } from "./lib/formato.mjs";
 
 const RAIZ = path.resolve(import.meta.dirname, "..");
 const DIR_RUTAS = path.join(RAIZ, "rutas");
+const DIR_GIMNASIO = path.join(RAIZ, "gimnasio");
 const DIR_SALIDA = path.join(RAIZ, "dist");
-const BASE = process.env.BASE || "/rutas/";
+const BASE = process.env.BASE || "/garage/";
 
 const avisos = [];
 const errores = [];
@@ -252,7 +260,7 @@ async function versionAssets() {
 }
 
 async function generar() {
-  console.log(`\nRutometro - generando el sitio (base "${BASE}")\n`);
+  console.log(`\nEl Garaje - generando el sitio (base "${BASE}")\n`);
 
   const rutas = await cargarRutas();
   const ver = await versionAssets();
@@ -265,7 +273,39 @@ async function generar() {
   );
 
   // indice
-  await escribir(path.join(DIR_SALIDA, "index.html"), paginaIndice({ base: BASE, rutas, zonas, ver }));
+  const rutinas = await cargarRutinas(DIR_GIMNASIO, aviso);
+  for (const r of rutinas) {
+    console.log(
+      `  + ${r.nombre}  ${r.ejercicios} ejercicios / ${r.series} series / ${r.duracion} min  ` +
+        `(${r.gifs.length} animaciones)  -> /gimnasio/${r.slug}/`
+    );
+  }
+
+  // portada del sitio y portada de cada seccion
+  await escribir(
+    path.join(DIR_SALIDA, "index.html"),
+    paginaPortada({ base: BASE, rutas, rutinas, ver })
+  );
+  await escribir(
+    path.join(DIR_SALIDA, "rutas", "index.html"),
+    paginaIndice({ base: BASE, rutas, zonas, ver })
+  );
+  await escribir(
+    path.join(DIR_SALIDA, "gimnasio", "index.html"),
+    paginaGimnasio({ base: BASE, rutinas, ver })
+  );
+
+  // una pagina por rutina, con sus animaciones al lado
+  for (const r of rutinas) {
+    await escribir(
+      path.join(DIR_SALIDA, "gimnasio", r.slug, "index.html"),
+      paginaRutina({ base: BASE, r, otras: rutinas.filter((o) => o.slug !== r.slug), ver })
+    );
+    for (const g of r.gifs) {
+      await mkdir(path.join(DIR_SALIDA, "gimnasio", r.slug, "videos"), { recursive: true });
+      await cp(g.origen, path.join(DIR_SALIDA, "gimnasio", r.slug, "videos", g.archivo));
+    }
+  }
 
   // una pagina por ruta
   for (const r of rutas) {
@@ -294,12 +334,18 @@ async function generar() {
   // 404
   await escribir(
     path.join(DIR_SALIDA, "404.html"),
-    `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Página no encontrada · Rutómetro</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${BASE}assets/styles.css"></head><body><main class="contenedor" style="padding:4rem 0;text-align:center"><h1>Esta página no existe</h1><p><a class="boton principal" href="${BASE}">Ver todas las rutas</a></p></main></body></html>`
+    `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Página no encontrada · El Garaje</title><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="stylesheet" href="${BASE}assets/styles.css"></head><body><main class="caja" style="padding:4rem 0;text-align:center"><h1 class="nombre titular">Esta página no existe</h1><p style="margin-top:24px"><a class="boton principal" href="${BASE}">Volver al Garaje</a></p></main></body></html>`
   );
 
   // sitemap y robots
   const host = "https://parra28.github.io";
-  const urls = [`${host}${BASE}`, ...rutas.map((r) => `${host}${BASE}ruta/${r.slug}/`)];
+  const urls = [
+    `${host}${BASE}`,
+    `${host}${BASE}rutas/`,
+    ...rutas.map((r) => `${host}${BASE}ruta/${r.slug}/`),
+    `${host}${BASE}gimnasio/`,
+    ...rutinas.map((r) => `${host}${BASE}gimnasio/${r.slug}/`),
+  ];
   await escribir(
     path.join(DIR_SALIDA, "sitemap.xml"),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls

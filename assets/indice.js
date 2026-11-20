@@ -1,4 +1,4 @@
-// Rutometro - buscador, filtros y orden del listado.
+// El Garaje - buscador, filtros y orden del listado.
 // Las filas ya vienen en el HTML: aqui solo se muestran, se ocultan y se
 // reordenan, asi que la pagina tambien funciona sin JavaScript.
 (function () {
@@ -77,7 +77,7 @@
 
     // los deslizables vuelven a su primera vista: si no, las pestañas se
     // quedan marcando una diapositiva que ya no es la que se ve
-    document.dispatchEvent(new CustomEvent("rutometro:filtrado"));
+    document.dispatchEvent(new CustomEvent("garaje:filtrado"));
   }
 
   [buscar, zona, dist, dplus, dif].forEach(function (el) {

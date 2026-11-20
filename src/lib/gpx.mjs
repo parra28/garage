@@ -1,4 +1,4 @@
-// Rutometro - lectura de GPX y calculo de metricas.
+// El Garaje - lectura de GPX y calculo de metricas.
 // Sin dependencias externas: solo Node.
 
 const R = 6371008.8; // radio medio de la Tierra en metros (IUGG)
@@ -352,7 +352,7 @@ export function gpxLigero(points, nombre, maxPuntos = 3000) {
     .join("\n");
   const n = escXml(nombre);
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<gpx version="1.1" creator="Rutometro" xmlns="http://www.topografix.com/GPX/1/1">
+<gpx version="1.1" creator="El Garaje" xmlns="http://www.topografix.com/GPX/1/1">
  <metadata>
   <name>${n}</name>
  </metadata>

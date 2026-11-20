@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Rutometro - servidor estatico minimo para ver el sitio en local.
+// El Garaje - servidor estatico minimo para ver el sitio en local.
 //   BASE=/ node src/build.mjs && node src/serve.mjs
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
