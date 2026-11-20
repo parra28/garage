@@ -396,10 +396,13 @@ main { padding: 0 0 48px; }
 .visor-antes { left: 6px; } .visor-despues { right: 6px; }
 .visor-nav[hidden] { display: none; }
 
-.videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: var(--hueco); }
+.videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 420px)); gap: var(--hueco); justify-content: center; }
 .video { margin: 0; }
 .video-marco { position: relative; aspect-ratio: 16 / 9; background: var(--panel-2); border-radius: var(--radio); overflow: hidden; }
-.video.vertical .video-marco { aspect-ratio: 9 / 16; }
+.video.vertical .video-marco { aspect-ratio: 9 / 16; max-width: 300px; margin-inline: auto; }
+/* Una publicacion de Instagram es una tarjeta cuadrada con cabecera y pie,
+   y su incrustado necesita unos 320 px de ancho para montarse bien. */
+.video.publicacion .video-marco { aspect-ratio: 1 / 1.3; min-width: min(320px, 100%); max-width: 420px; margin-inline: auto; }
 .videos.verticales { grid-template-columns: repeat(auto-fill, minmax(200px, 250px)); justify-content: center; }
 .video-marco iframe { width: 100%; height: 100%; border: 0; display: block; }
 .video-boton {

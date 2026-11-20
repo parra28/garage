@@ -614,7 +614,7 @@ export function paginaRuta({ base, r, otras, ver = "" }) {
     <div class="videos${soloVerticales ? " verticales" : ""}">
       ${videos
         .map(
-          (vi) => `<figure class="video${vi.vertical ? " vertical" : ""}" data-incrustar="${esc(vi.incrustar)}" data-plataforma="${esc(vi.plataforma)}">
+          (vi) => `<figure class="video${vi.vertical ? " vertical" : ""}${vi.publicacion ? " publicacion" : ""}" data-incrustar="${esc(vi.incrustar)}" data-plataforma="${esc(vi.plataforma)}">
         <div class="video-marco">
           <button type="button" class="video-boton">
             <span class="video-play" aria-hidden="true">▶</span>

@@ -23,7 +23,12 @@ export function analizarVideo(url) {
       // Instagram no ofrece ningún parámetro de autoplay en su incrustado:
       // su reproductor arranca con un toque dentro del propio iframe.
       incrustar: `https://www.instagram.com/${tipo}/${m[2]}/embed/`,
-      vertical: true,
+      // Un reel es un vídeo a pantalla 9:16. Una publicación (/p/) no: es
+      // una tarjeta con cabecera, foto y pie, y el incrustado de Instagram
+      // necesita unos 320 px de ancho para montarse. En la columna estrecha
+      // de los reels salía recortada.
+      vertical: tipo !== "p",
+      publicacion: tipo === "p",
     };
   }
 
