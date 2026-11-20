@@ -346,6 +346,31 @@ async function generar() {
     `${host}${BASE}gimnasio/`,
     ...rutinas.map((r) => `${host}${BASE}gimnasio/${r.slug}/`),
   ];
+  // manifiesto: para que el acceso directo del móvil tenga icono y nombre
+  await escribir(
+    path.join(DIR_SALIDA, "manifest.webmanifest"),
+    JSON.stringify(
+      {
+        name: "El Garaje",
+        short_name: "El Garaje",
+        description: "Las rutas y el gimnasio en el mismo sitio.",
+        lang: "es",
+        start_url: BASE,
+        scope: BASE,
+        display: "standalone",
+        background_color: "#dedfdc",
+        theme_color: "#dedfdc",
+        icons: [
+          { src: `${BASE}assets/icono-192.png`, sizes: "192x192", type: "image/png" },
+          { src: `${BASE}assets/icono-512.png`, sizes: "512x512", type: "image/png" },
+          { src: `${BASE}assets/icono-512.png`, sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+      },
+      null,
+      2
+    )
+  );
+
   await escribir(
     path.join(DIR_SALIDA, "sitemap.xml"),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls

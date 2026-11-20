@@ -276,6 +276,10 @@ ${imagen ? `<meta property="og:image" content="${esc(imagen)}">\n<meta name="twi
 ${FUENTES}
 <link rel="stylesheet" href="${base}assets/styles.css${v}">
 <link rel="icon" href="${base}assets/icono.svg" type="image/svg+xml">
+<link rel="icon" href="${base}assets/icono-32.png${v}" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="${base}assets/icono-180.png${v}">
+<link rel="manifest" href="${base}manifest.webmanifest${v}">
+<meta name="apple-mobile-web-app-title" content="El Garaje">
 <script>try{var t=localStorage.getItem("garaje-tema");if(t)document.documentElement.dataset.tema=t}catch(e){}</script>
 </head>
 <body${clase ? ` class="${clase}"` : ""}>
