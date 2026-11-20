@@ -90,6 +90,25 @@ function silueta(perfil, { puntos = [], hero = false } = {}) {
 </div>`;
 }
 
+/** Trazado reducido para el mapa de las tarjetas. */
+function trazadoMini(trazado, maximo = 170) {
+  if (!trazado || trazado.length === 0) return [];
+  const paso = Math.max(1, Math.ceil(trazado.length / maximo));
+  const out = [];
+  for (let i = 0; i < trazado.length; i += paso) {
+    out.push([Math.round(trazado[i][0] * 1e4) / 1e4, Math.round(trazado[i][1] * 1e4) / 1e4]);
+  }
+  const u = trazado[trazado.length - 1];
+  out.push([Math.round(u[0] * 1e4) / 1e4, Math.round(u[1] * 1e4) / 1e4]);
+  return out;
+}
+
+function datosMapas(rutas) {
+  const datos = {};
+  for (const r of rutas) datos[r.slug] = trazadoMini(r.trazado);
+  return `<script type="application/json" id="datos-mapas">${JSON.stringify(datos).replace(/</g, "\\u003c")}</script>`;
+}
+
 // ---------------------------------------------------------------- piezas
 
 function dato(valor, unidad, etiqueta, { grande = false } = {}) {
@@ -175,11 +194,11 @@ ${scripts}
 
 function panelRuta(r, base) {
   const t = tiempos(r);
-  return `<a class="panel enlace ajustado ruta-panel c4" href="${base}ruta/${r.slug}/"
+  return `<a class="panel enlace ajustado ruta-panel es-bici c4" href="${base}ruta/${r.slug}/"
   data-busqueda="${esc([r.nombre, r.zona, r.provincia, (r.tags || []).join(" ")].filter(Boolean).join(" ").toLowerCase())}"
   data-zona="${esc(r.zona || "")}" data-bici="${esc(r.bici || "")}"
   data-dist="${r.distancia}" data-dplus="${r.desnivelPositivo}" data-dif="${r.dificultad || 0}" data-orden="${r.orden}">
-  <div class="ruta-perfil">${silueta(r.perfil)}</div>
+  <div class="ruta-mapa" data-slug="${esc(r.slug)}">${silueta(r.perfil)}</div>
   <div class="ruta-cuerpo">
     <h3>${esc(r.nombre)}</h3>
     <p class="ruta-lugar">${lugarRuta(r)}</p>
@@ -194,8 +213,17 @@ function panelRuta(r, base) {
 }
 
 function panelRutina(r, base) {
-  return `<a class="panel enlace rutina-panel c4" href="${base}gimnasio/${r.slug}/">
-  <h3>${esc(r.nombre)}</h3>
+  const gif = r.gifs && r.gifs.length ? r.gifs[0].archivo : "";
+  return `<a class="panel enlace ajustado rutina-panel es-gimnasio c4" href="${base}gimnasio/${r.slug}/">
+  ${
+    gif
+      ? `<div class="rutina-gif"><img src="${base}gimnasio/${r.slug}/videos/${encodeURIComponent(
+          gif
+        )}" alt="" loading="lazy" decoding="async"></div>`
+      : ""
+  }
+  <div class="rutina-cuerpo">
+  <h3>${esc(sinEmoji(r.nombre))}</h3>
   ${r.resumen ? `<p class="rutina-resumen">${esc(r.resumen)}</p>` : ""}
   <div class="datos">
     ${dato(entero(r.duracion), "min", "Duración")}
@@ -209,6 +237,7 @@ function panelRutina(r, base) {
           .join("")}</div>`
       : ""
   }
+  </div>
 </a>`;
 }
 
@@ -233,16 +262,22 @@ export function paginaPortada({ base, rutas, rutinas, ver = "" }) {
     </div>
   </section>
 
-  <div class="rotulo es-gimnasio">
-    <h2><span class="marca-seccion"></span>Gimnasio</h2>
+  <section class="panel c12 cabecera es-gimnasio">
+    <div>
+      <h2>Gimnasio</h2>
+      <p>${entero(rutinas.length)} rutinas de fuerza con la animación de cada ejercicio</p>
+    </div>
     <a href="${base}gimnasio/">Ver las rutinas</a>
-  </div>
+  </section>
   ${rutinas.map((r) => panelRutina(r, base)).join("\n")}
 
-  <div class="rotulo es-bici">
-    <h2><span class="marca-seccion"></span>Bici</h2>
+  <section class="panel c12 cabecera es-bici">
+    <div>
+      <h2>Bici</h2>
+      <p>${entero(rutas.length)} rutas con su mapa, su perfil y el GPX para descargar</p>
+    </div>
     <a href="${base}rutas/">Buscar entre las rutas</a>
-  </div>
+  </section>
   ${rutas.map((r) => panelRuta(r, base)).join("\n")}
 
   <section class="panel c12"><p class="pie">Rutas propias, trazadas y verificadas sobre el terreno. Los archivos GPX
@@ -254,6 +289,7 @@ export function paginaPortada({ base, rutas, rutinas, ver = "" }) {
     titulo: SITIO,
     descripcion: `${rutas.length} rutas en bici con mapa, perfil y GPX, y ${rutinas.length} rutinas de fuerza para ciclista.`,
     contenido,
+    scripts: `${LEAFLET}\n${datosMapas(rutas)}\n<script src="${base}assets/minimapas.js${ver ? `?v=${ver}` : ""}"></script>`,
     ver,
   });
 }
@@ -306,7 +342,10 @@ export function paginaIndice({ base, rutas, zonas, ver = "" }) {
     seccion: "rutas",
     descripcion: `${rutas.length} rutas en bici de carretera, gravel y MTB con mapa, perfil de altimetría y descarga del GPX.`,
     contenido,
-    scripts: `<script src="${base}assets/indice.js${ver ? `?v=${ver}` : ""}"></script>`,
+    scripts: `${LEAFLET}
+${datosMapas(rutas)}
+<script src="${base}assets/indice.js${ver ? `?v=${ver}` : ""}"></script>
+<script src="${base}assets/minimapas.js${ver ? `?v=${ver}` : ""}"></script>`,
     ver,
   });
 }
@@ -351,13 +390,13 @@ export function paginaRuta({ base, r, otras, ver = "" }) {
     </div>
   </section>
 
+  <section class="panel ajustado c12"><div id="mapa" class="mapa"></div></section>
+
   ${
     r.conAltitud
       ? `<section class="panel ajustado c12">${silueta(r.perfil, { puntos: r.puntos || [], hero: true })}</section>`
       : ""
   }
-
-  <section class="panel ajustado c12"><div id="mapa" class="mapa"></div></section>
 
   ${
     r.descripcionHtml
@@ -435,7 +474,7 @@ export function paginaRuta({ base, r, otras, ver = "" }) {
 
   ${
     otras.length
-      ? `<div class="rotulo es-bici"><h2><span class="marca-seccion"></span>Otras rutas</h2></div>
+      ? `<section class="panel c12 cabecera es-bici"><div><h2>Otras rutas</h2></div></section>
   ${otras.map((o) => panelRuta(o, base)).join("")}`
       : ""
   }
@@ -464,7 +503,8 @@ export function paginaRuta({ base, r, otras, ver = "" }) {
 <script type="application/json" id="datos-ruta">${datosRuta.replace(/</g, "\\u003c")}</script>
 <script src="${base}assets/ruta.js${v}"></script>
 ${r.fotos && r.fotos.length ? `<script src="${base}assets/galeria.js${v}"></script>` : ""}
-${videos.length ? `<script src="${base}assets/video.js${v}"></script>` : ""}`,
+${videos.length ? `<script src="${base}assets/video.js${v}"></script>` : ""}
+${otras.length ? `${datosMapas(otras)}\n<script src="${base}assets/minimapas.js${v}"></script>` : ""}`,
     ver,
   });
 }
@@ -511,6 +551,127 @@ export function paginaGimnasio({ base, rutinas, ver = "" }) {
   });
 }
 
+
+// ----------------------------------------------------- limpieza del texto
+
+/** Fuera los emoji: en una rutina estorban más que ayudan. */
+function sinEmoji(t) {
+  return String(t)
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.;:])/g, "$1")
+    .trim();
+}
+
+/**
+ * Al quitar los emoji, las tablas que usaban una columna de iconos se quedan
+ * con una columna vacía. Se elimina.
+ */
+function limpiarTablas(html) {
+  return html.replace(/<table>([\s\S]*?)<\/table>/g, (todo, dentro) => {
+    const filas = [...dentro.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((m) => m[1]);
+    if (filas.length === 0) return todo;
+    const celdas = filas.map((f) => [...f.matchAll(/<(t[hd])([^>]*)>([\s\S]*?)<\/\1>/g)]);
+    const columnas = Math.max(...celdas.map((c) => c.length));
+    const vacias = [];
+    for (let i = 0; i < columnas; i++) {
+      const todoVacio = celdas.every((fila) => {
+        const c = fila[i];
+        return !c || c[3].replace(/<[^>]+>/g, "").trim() === "";
+      });
+      if (todoVacio) vacias.push(i);
+    }
+    if (vacias.length === 0) return todo;
+    let i = 0;
+    const limpio = dentro.replace(/<tr>([\s\S]*?)<\/tr>/g, (f, interior) => {
+      const cs = [...interior.matchAll(/<(t[hd])([^>]*)>([\s\S]*?)<\/\1>/g)];
+      i++;
+      return `<tr>${cs.filter((_, j) => !vacias.includes(j)).map((c) => c[0]).join("")}</tr>`;
+    });
+    return `<table>${limpio}</table>`;
+  });
+}
+
+// -------------------------------------------------- un ejercicio del día
+
+/**
+ * Convierte el trozo de HTML de un ejercicio en una ficha de entreno:
+ * el código y el nombre arriba, la animación encuadrada, la dosis en
+ * números grandes y, debajo, la técnica.
+ */
+function ejercicio(trozo) {
+  const mTitulo = trozo.match(/^<h3[^>]*>([\s\S]*?)<\/h3>/);
+  if (!mTitulo) return `<div class="notas prosa">${trozo}</div>`;
+  let resto = trozo.slice(mTitulo[0].length);
+
+  const titulo = sinEmoji(mTitulo[1].replace(/<[^>]+>/g, " "));
+  const mCodigo = titulo.match(/^([A-Z]\d+)\s*·\s*(.+)$/);
+  const codigo = mCodigo ? mCodigo[1] : "";
+  let nombre = mCodigo ? mCodigo[2] : titulo;
+  // lo que iba en cursiva tras el nombre es un apunte, no parte del nombre
+  const mApunte = mTitulo[1].match(/<em>([\s\S]*?)<\/em>\s*$/);
+  const apunte = mApunte ? sinEmoji(mApunte[1].replace(/<[^>]+>/g, "")) : "";
+  if (apunte) nombre = sinEmoji(nombre.replace(new RegExp(apunte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"), ""));
+
+  // La animación principal es la que va suelta. Las que llevan pie van
+  // envueltas en <figure> y son variantes, así que se quedan en las notas.
+  let gif = "";
+  const mSuelta = resto.match(/<p class="animacion">\s*(<img[^>]*>)\s*<\/p>/);
+  if (mSuelta) {
+    gif = mSuelta[1];
+    resto = resto.replace(mSuelta[0], "");
+  } else {
+    const mFigura = resto.match(/<figure class="animacion">[\s\S]*?(<img[^>]*>)[\s\S]*?<\/figure>/);
+    if (mFigura) {
+      gif = mFigura[1];
+      resto = resto.replace(mFigura[0], "");
+    }
+  }
+
+  // la primera tabla es la dosis: series, reps, descanso e intensidad
+  const mTabla = resto.match(/<div class="tabla-scroll"><table>([\s\S]*?)<\/table><\/div>/);
+  let dosis = "";
+  if (mTabla) {
+    const encabezados = [...mTabla[1].matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map((m) =>
+      sinEmoji(m[1].replace(/<[^>]+>/g, ""))
+    );
+    const valores = [...mTabla[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) =>
+      sinEmoji(m[1].replace(/<\/?(strong|b|em|i)>/g, ""))
+    );
+    if (encabezados.length && valores.length) {
+      dosis = `<dl class="dosis">${encabezados
+        .map((h, i) => (valores[i] === undefined ? "" : `<div><dt>${h}</dt><dd>${valores[i]}</dd></div>`))
+        .join("")}</dl>`;
+      resto = resto.replace(mTabla[0], "");
+    }
+  }
+
+  return `<article class="ejercicio">
+  <header class="ejercicio-cab">
+    ${codigo ? `<span class="codigo">${esc(codigo)}</span>` : ""}
+    <div>
+      <h4>${esc(nombre)}</h4>
+      ${apunte ? `<p class="ejercicio-apunte">${esc(apunte)}</p>` : ""}
+    </div>
+  </header>
+  <div class="ejercicio-cuerpo">
+    <div class="ejercicio-gif">${gif || '<span class="sin-gif">Sin animación</span>'}</div>
+    <div class="ejercicio-datos">
+      ${dosis}
+      <div class="notas prosa">${resto.trim()}</div>
+    </div>
+  </div>
+</article>`;
+}
+
+/** Parte el cuerpo de una sección en sus ejercicios. */
+function cuerpoSeccion(html) {
+  const trozos = html.split(/(?=<h3)/).map((t) => t.trim()).filter(Boolean);
+  const tieneEjercicios = trozos.some((t) => /^<h3[^>]*>\s*[A-Z]\d+\s*(·|&middot;)/.test(t));
+  if (!tieneEjercicios) return `<div class="prosa">${html}</div>`;
+  return `<div class="ejercicios">${trozos.map(ejercicio).join("")}</div>`;
+}
+
 // -------------------------------------------------------- ficha rutina
 
 /** Parte el cuerpo de la rutina por sus titulos de primer nivel. */
@@ -530,8 +691,10 @@ function secciones(html) {
 export function paginaRutina({ base, r, otras, ver = "" }) {
   // Las reglas y la teoría van antes del primer titular: se pliegan, porque
   // en el gimnasio lo que se mira entre series son los bloques.
-  const bloques = secciones(r.cuerpoHtml).map((b) =>
-    b.titulo ? { ...b, abierto: true } : { titulo: "Antes de empezar", cuerpo: b.cuerpo, abierto: false }
+  const bloques = secciones(limpiarTablas(sinEmoji(r.cuerpoHtml))).map((b) =>
+    b.titulo
+      ? { titulo: sinEmoji(b.titulo), cuerpo: b.cuerpo, abierto: true }
+      : { titulo: "Antes de empezar", cuerpo: b.cuerpo, abierto: false }
   );
 
   const contenido = `
@@ -564,14 +727,14 @@ export function paginaRutina({ base, r, otras, ver = "" }) {
     .map(
       (b, i) => `<details class="panel ajustado seccion-rutina c12" id="s${i}"${b.abierto ? " open" : ""}>
     <summary>${esc(b.titulo)}</summary>
-    <div class="seccion-cuerpo prosa">${b.cuerpo}</div>
+    <div class="seccion-cuerpo">${cuerpoSeccion(b.cuerpo)}</div>
   </details>`
     )
     .join("\n")}
 
   ${
     otras.length
-      ? `<div class="rotulo es-gimnasio"><h2><span class="marca-seccion"></span>Otras rutinas</h2></div>
+      ? `<section class="panel c12 cabecera es-gimnasio"><div><h2>Otras rutinas</h2></div></section>
   ${otras.map((o) => panelRutina(o, base)).join("")}`
       : ""
   }
