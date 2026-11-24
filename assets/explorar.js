@@ -188,7 +188,15 @@
     items.forEach(function (it) {
       var si = it.dataset.slug === slug;
       it.classList.toggle("activa", si);
-      if (si && op.desdeMapa) it.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      // en escritorio la lista se desplaza por dentro hasta la ruta; la pagina
+      // no se mueve nunca (en el movil la lista va debajo del mapa)
+      if (si && op.desdeMapa && window.innerWidth > 900) {
+        var cont = listado;
+        var arriba = it.offsetTop - cont.offsetTop;
+        if (arriba < cont.scrollTop || arriba + it.offsetHeight > cont.scrollTop + cont.clientHeight) {
+          cont.scrollTo({ top: arriba - 8, behavior: "smooth" });
+        }
+      }
     });
     mostrarDetalle(porSlug[slug]);
     var c = capas[slug];
