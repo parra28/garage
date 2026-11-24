@@ -22,9 +22,10 @@ import {
   paginaRuta,
   paginaGimnasio,
   paginaRutina,
-  paginaPortada,
   pagina404,
 } from "./lib/render.mjs";
+import { paginaPortada } from "./lib/portada.mjs";
+import { primerFotograma } from "./lib/gif.mjs";
 import { cargarRutinas } from "./lib/gimnasio.mjs";
 import { TIPOS_BICI, ALIAS_BICI, km, entero } from "./lib/formato.mjs";
 
@@ -68,11 +69,22 @@ async function cargarFotos(nombreBase) {
     }
     const sinExt = archivo.slice(0, -path.extname(archivo).length);
     const guion = sinExt.indexOf(" - ");
+    // la copia de 640 px para el movil (src/reducir-fotos.mjs), si existe
+    const pequena = path.join(carpeta, "640", `${sinExt}.webp`);
+    const rutaPrevia = path.join(carpeta, "640", `${sinExt}.previa.webp`);
+    const previa = existsSync(rutaPrevia)
+      ? `data:image/webp;base64,${(await readFile(rutaPrevia)).toString("base64")}`
+      : "";
+    if (!existsSync(pequena)) {
+      aviso(`${nombreBase}/${archivo} no tiene copia pequena: ejecuta node src/reducir-fotos.mjs`);
+    }
     fotos.push({
       archivo,
       origen: path.join(carpeta, archivo),
       pie: guion > -1 ? sinExt.slice(guion + 3).trim() : "",
       peso: info.size,
+      pequena: existsSync(pequena) ? { archivo: `${sinExt}.webp`, origen: pequena } : null,
+      previa,
     });
   }
   return fotos;
@@ -295,9 +307,14 @@ async function escribir(ruta, contenido) {
 async function versionAssets() {
   const dir = path.join(RAIZ, "assets");
   const huella = createHash("sha256");
-  for (const f of (await readdir(dir)).sort()) {
-    huella.update(f);
-    huella.update(await readFile(path.join(dir, f)));
+  // recursivo: assets/kit tiene subcarpetas
+  const ficheros = (await readdir(dir, { recursive: true, withFileTypes: true }))
+    .filter((e) => e.isFile())
+    .map((e) => path.join(e.parentPath || e.path, e.name))
+    .sort();
+  for (const f of ficheros) {
+    huella.update(path.relative(dir, f));
+    huella.update(await readFile(f));
   }
   return huella.digest("hex").slice(0, 8);
 }
@@ -324,11 +341,7 @@ async function generar() {
     );
   }
 
-  // portada del sitio y portada de cada seccion
-  await escribir(
-    path.join(DIR_SALIDA, "index.html"),
-    paginaPortada({ base: BASE, rutas, rutinas, ver })
-  );
+  // portada de cada seccion (la del sitio, despues de las rutinas: usa sus fotogramas quietos)
   await escribir(
     path.join(DIR_SALIDA, "rutas", "index.html"),
     paginaIndice({ base: BASE, rutas, zonas, ver })
@@ -348,7 +361,21 @@ async function generar() {
       await mkdir(path.join(DIR_SALIDA, "gimnasio", r.slug, "videos"), { recursive: true });
       await cp(g.origen, path.join(DIR_SALIDA, "gimnasio", r.slug, "videos", g.archivo));
     }
+    // la animacion de la portada va quieta: su primer fotograma
+    if (r.gifs.length) {
+      const g = r.gifs[0];
+      const quieto = primerFotograma(await readFile(g.origen));
+      if (quieto) {
+        r.gifQuieto = g.archivo.replace(/\.gif$/i, ".quieto.gif");
+        await writeFile(path.join(DIR_SALIDA, "gimnasio", r.slug, "videos", r.gifQuieto), quieto);
+      } else {
+        aviso(`${r.carpeta}: no se ha podido sacar el primer fotograma de ${g.archivo}`);
+      }
+    }
   }
+
+  // portada del sitio
+  await escribir(path.join(DIR_SALIDA, "index.html"), paginaPortada({ base: BASE, rutas, rutinas, ver }));
 
   // una pagina por ruta
   for (const r of rutas) {
@@ -366,8 +393,9 @@ async function generar() {
     );
     await escribir(path.join(DIR_SALIDA, "gpx", `${r.slug}.gpx`), r.gpxLigero);
     for (const foto of r.fotos) {
-      await mkdir(path.join(DIR_SALIDA, "fotos", r.slug), { recursive: true });
+      await mkdir(path.join(DIR_SALIDA, "fotos", r.slug, "640"), { recursive: true });
       await cp(foto.origen, path.join(DIR_SALIDA, "fotos", r.slug, foto.archivo));
+      if (foto.pequena) await cp(foto.pequena.origen, path.join(DIR_SALIDA, "fotos", r.slug, "640", foto.pequena.archivo));
     }
   }
 
@@ -398,8 +426,8 @@ async function generar() {
         start_url: BASE,
         scope: BASE,
         display: "standalone",
-        background_color: "#dedfdc",
-        theme_color: "#dedfdc",
+        background_color: "#f5f3ec",
+        theme_color: "#f5f3ec",
         icons: [
           { src: `${BASE}assets/icono-192.png`, sizes: "192x192", type: "image/png" },
           { src: `${BASE}assets/icono-512.png`, sizes: "512x512", type: "image/png" },
